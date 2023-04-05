@@ -1,0 +1,5 @@
+<h2>Loop</h2>
+{% for value in serialized_persons %}
+{{ loop.index }} - ID: {{ value.id_pers }}, Name: {{ value.name }}, Hint: {{ value.hint }}<br />
+{% endfor %}
+<hr />
