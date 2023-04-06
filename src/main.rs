@@ -30,13 +30,20 @@ fn dbcontents() -> Template {
         .unwrap();
 
     let mut serialized_persons = Vec::new();
+    println!(
+        "serialized_persons INITIAL CAPACITY: {:?}",
+        &serialized_persons.capacity()
+    );
 
     for person_result in person_iter {
         let person = person_result.unwrap();
         println!("Found person {:?}", person);
         serialized_persons.push(person);
     }
-    println!("serialized_persons: {:?}", &serialized_persons);
+    println!(
+        "serialized_persons CAPACITY: {:?}",
+        &serialized_persons.capacity()
+    );
 
     let context = context! {serialized_persons};
     println!("context: {:?}", &context);
