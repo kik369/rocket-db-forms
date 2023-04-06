@@ -6,7 +6,7 @@ The following routes have been implemented:
 
 [All Projects](http://127.0.0.1:8000/all-projects) - Shows a list of all projects in the database.
 
-[All Projects for User <id>](http://127.0.0.1:8000/all-projects-for-user/4)Lists all projects associated with a specific user, identified by their user ID.
+[All Projects for User `<id>`](http://127.0.0.1:8000/all-projects-for-user/4) - Lists all projects associated with a specific user, identified by their user ID.
 
 [User Info and All Projects for That User](http://127.0.0.1:8000/user/1) - Displays detailed information for a specific user, along with a list of all their associated projects.
 
