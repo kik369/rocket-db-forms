@@ -14,6 +14,6 @@ The following routes have been implemented:
 
 [Add User](http://127.0.0.1:8000/add-user) - A form to add a new User to the database.
 
-[Add Project](http://127.0.0.1:8000/add-user) - A form to add a new Project for a User to the database.
+[Add Project](http://127.0.0.1:8000/add-project) - A form to add a new Project for a User to the database.
 
 While the implementation might not be perfect, the primary goal of this project is to learn and experiment with the various technologies involved.
