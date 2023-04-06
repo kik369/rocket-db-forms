@@ -1,4 +1,4 @@
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -137,4 +137,26 @@ pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
         serialized_data.push(project);
     }
     serialized_data
+}
+
+pub fn add_user(name: &str, data: &str) {
+    let connection = Connection::open("db.sqlite").unwrap();
+    match connection.execute(
+        "INSERT INTO person (name, data) VALUES (?1, ?2)",
+        params![name, data],
+    ) {
+        Ok(updated) => println!("{} rows were updated", updated),
+        Err(err) => println!("update failed: {}", err),
+    }
+}
+
+pub fn add_project(name: &str, start: &str, end: &str, id_pers: u8) {
+    let connection = Connection::open("db.sqlite").unwrap();
+    match connection.execute(
+        "INSERT INTO project (name, start_date, end_date, id_pers) VALUES (?1, ?2, ?3, ?4)",
+        params![name, start, end, id_pers],
+    ) {
+        Ok(updated) => println!("{} rows were updated", updated),
+        Err(err) => println!("update failed: {}", err),
+    }
 }
