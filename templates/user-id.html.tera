@@ -11,9 +11,16 @@
         />
     </head>
     <body>
-        <h1>Loop</h1>
-        {% for value in serialized_persons %}
-        {{ loop.index }} - ID: {{ value.id_pers }}, Name: {{ value.name }}, Hint: {{ value.hint }}
+        <h1>User Loop</h1>
+        {% for entry in serialized_data %}
+        {{ loop.index }} - ID: {{ entry.id_pers }}, Name: {{ entry.name }}, Data: {{ entry.data }}
+        <br />
+        {% endfor %}
+
+        <h1>Project Loop</h1>
+        {% for entry in serialized_data2 %}
+        {{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start:
+        {{ entry.start }}, End: {{ entry.end }}, id_pers: {{ entry.id_pers }}
         <br />
         {% endfor %}
     </body>

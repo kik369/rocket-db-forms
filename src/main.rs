@@ -1,58 +1,45 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket_dyn_templates::{context, Template};
-use rusqlite::Connection;
-use serde::{Deserialize, Serialize};
+mod db_queries;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Person {
-    id_pers: i32,
-    name: String,
-    hint: String,
+use rocket_dyn_templates::{context, Template};
+
+#[get("/all-users")]
+fn all_users() -> Template {
+    let serialized_data = db_queries::query_all_users();
+    let context = context! {serialized_data};
+    Template::render("all-users", &context)
 }
 
-#[get("/")]
-fn dbcontents() -> Template {
-    let conn = Connection::open("db.sqlite").unwrap();
-    let mut stmt = conn.prepare("SELECT * FROM person").unwrap();
-    let person_iter = stmt
-        .query_map([], |row| {
-            let id_pers = row.get(0)?;
-            let name = row.get::<_, String>(1)?;
-            let hint = row.get::<_, String>(2)?;
-            Ok(Person {
-                id_pers,
-                name,
-                hint,
-            })
-        })
-        .unwrap();
+#[get("/all-projects")]
+fn all_projects() -> Template {
+    let serialized_data = db_queries::query_all_projects();
+    let context = context! {serialized_data};
+    Template::render("all-projects", &context)
+}
 
-    let mut serialized_persons = Vec::new();
-    println!(
-        "serialized_persons INITIAL CAPACITY: {:?}",
-        &serialized_persons.capacity()
-    );
+#[get("/user/<id>")]
+fn user_id(id: u8) -> Template {
+    let serialized_data = db_queries::query_user_id(id);
+    let serialized_data2 = db_queries::query_all_projects_for_user(id);
+    let context = context! {serialized_data, serialized_data2};
+    Template::render("user-id", &context)
+}
 
-    for person_result in person_iter {
-        let person = person_result.unwrap();
-        println!("Found person {:?}", person);
-        serialized_persons.push(person);
-    }
-    println!(
-        "serialized_persons CAPACITY: {:?}",
-        &serialized_persons.capacity()
-    );
-
-    let context = context! {serialized_persons};
-    println!("context: {:?}", &context);
-    Template::render("dbcontents", &context)
+#[get("/all-projects-for-user/<id>")]
+fn all_projects_for_user(id: u8) -> Template {
+    let serialized_data = db_queries::query_all_projects_for_user(id);
+    let context = context! {serialized_data};
+    Template::render("all-projects-for-user", &context)
 }
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .mount("/", routes![dbcontents])
+        .mount(
+            "/",
+            routes![all_users, all_projects, user_id, all_projects_for_user],
+        )
         .attach(Template::fairing())
 }
