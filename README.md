@@ -1,3 +1,5 @@
+# Rust, Rocket, SQLite, and Forms
+
 This project is an exploration of Rust, [Rocket](https://rocket.rs/), SQLite, and forms to learn more about their integration and usage. This learning exercise covers various aspects, such as displaying user information, listing projects, and more.
 
 The following routes have been implemented:
