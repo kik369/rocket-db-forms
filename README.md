@@ -12,6 +12,8 @@ The following routes have been implemented:
 
 [User Info and All Projects for That User](http://127.0.0.1:8000/user/1) - Displays detailed information for a specific user, along with a list of all their associated projects.
 
-[Add User](http://127.0.0.1:8000/add-user) - A form to add a new user to the database.
+[Add User](http://127.0.0.1:8000/add-user) - A form to add a new User to the database.
+
+[Add Project](http://127.0.0.1:8000/add-user) - A form to add a new Project for a User to the database.
 
 While the implementation might not be perfect, the primary goal of this project is to learn and experiment with the various technologies involved.
