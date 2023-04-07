@@ -13,30 +13,27 @@ use rocket::{
 #[get("/all-users")]
 fn all_users() -> Template {
     let serialized_data = db_queries::query_all_users();
-    let context = context! {serialized_data};
-    Template::render("all-users", &context)
+    Template::render("all-users", context! {serialized_data})
 }
 
 #[get("/all-projects")]
 fn all_projects() -> Template {
     let serialized_data = db_queries::query_all_projects();
-    let context = context! {serialized_data};
-    Template::render("all-projects", &context)
+    Template::render("all-projects", context! {serialized_data})
 }
 
 #[get("/user/<id>")]
 fn user_id(id: u8) -> Template {
-    let serialized_data = db_queries::query_user_id(id);
-    let serialized_data2 = db_queries::query_all_projects_for_user(id);
-    let context = context! {serialized_data, serialized_data2};
+    let serialized_data_user = db_queries::query_user_id(id);
+    let serialized_data_project = db_queries::query_all_projects_for_user(id);
+    let context = context! {serialized_data_user, serialized_data_project};
     Template::render("user-id", &context)
 }
 
 #[get("/all-projects-for-user/<id>")]
 fn all_projects_for_user(id: u8) -> Template {
     let serialized_data = db_queries::query_all_projects_for_user(id);
-    let context = context! {serialized_data};
-    Template::render("all-projects-for-user", &context)
+    Template::render("all-projects-for-user", context! {serialized_data})
 }
 
 #[get("/add-user")]
