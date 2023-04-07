@@ -4,8 +4,13 @@ jobs:
     build_and_test:
         docker:
             - image: 'circleci/rust:latest'
+        environment:
+            - ROCKET_ENV: 'production'
         steps:
             - checkout
+            - run:
+                  name: 'Install Rust nightly'
+                  command: 'rustup default nightly'
             - run:
                   name: 'Install dependencies'
                   command: 'cargo build --release'
