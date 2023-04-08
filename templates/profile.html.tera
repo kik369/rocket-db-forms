@@ -11,7 +11,9 @@
         />
     </head>
     <body>
-        <h1>Success</h1>
-        <p>Hi, {{ email }}</p>
+        <h1>Only for logged in users</h1>
+        {% if user_logged_in %}
+        {{ user_logged_in }}
+        {% else %} Sorry, no user_logged_in. {% endif %}
     </body>
 </html>

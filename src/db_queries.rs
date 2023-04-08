@@ -5,8 +5,8 @@ use crate::passwords;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
-    id: u8,
-    email: String,
+    pub id: u8,
+    pub email: String,
     pub password: String,
 }
 
@@ -164,21 +164,31 @@ pub fn add_project(name: &str, start: &str, end: &str, id_pers: u8) {
     }
 }
 
-pub fn query_user_email(email: &str) -> String {
+pub fn query_user_email(email: String) -> Vec<User> {
+    let email = email.to_string();
     let connection = Connection::open("db.sqlite").unwrap();
     let mut statement = connection
-        .prepare(format!("SELECT password FROM user WHERE email = '{}'", email).as_str())
+        .prepare(format!("SELECT * FROM user WHERE email = '{}'", email).as_str())
         .unwrap();
     let items_iter = statement
-        .query_map([], |row| Ok(row.get::<_, String>(0)?))
+        .query_map([], |row| {
+            let id: u8 = row.get(0)?;
+            let email: String = row.get::<_, String>(1)?;
+            let password: String = row.get::<_, String>(2)?;
+            Ok(User {
+                id: id,
+                email: email,
+                password: password,
+            })
+        })
         .unwrap();
 
-    let mut serialized_data: String = "".to_string();
+    let mut serialized_data: Vec<User> = Vec::new();
 
     for user_result in items_iter {
         let user = user_result.unwrap();
-        println!("{}", user);
-        serialized_data.push_str(user.as_str());
+        serialized_data.push(user);
     }
+    println!("query_user_email serialized_data{:?}", serialized_data);
     serialized_data
 }

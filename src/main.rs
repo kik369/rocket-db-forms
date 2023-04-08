@@ -5,12 +5,13 @@ mod db_queries;
 mod passwords;
 
 use rocket::http::{Cookie, CookieJar};
-use rocket_dyn_templates::{context, Template};
-
+use rocket::request::{self, FromRequest, Request};
 use rocket::{
     form::{Contextual, Form},
     http::Status,
 };
+use rocket_dyn_templates::{context, Template};
+use std::collections::HashMap;
 
 #[get("/all-users")]
 fn all_users() -> Template {
@@ -69,8 +70,10 @@ struct LoginForm<'v> {
 }
 
 #[get("/login")]
-fn login_get() -> Template {
-    Template::render("login", &context! {})
+fn login_get(cookies: &CookieJar<'_>) -> Template {
+    let cookies = cookies.get_private("user_logged_in");
+    println!("cookies = {:?}", &cookies);
+    Template::render("login", context! {})
 }
 
 #[post("/login", data = "<form>")]
@@ -80,25 +83,71 @@ fn login_post<'r>(
 ) -> (Status, Template) {
     let template = match form.value {
         Some(ref submission) => {
-            let user = db_queries::query_user_email(submission.email);
+            println!(
+                "submission.email.to_string() for query_user_email = {:?}",
+                submission.email.to_string()
+            );
+            let user = db_queries::query_user_email(submission.email.to_string());
             println!("user = {:?}", user);
-            if !user.is_empty() && passwords::verify_password(submission.password, &user) {
+            if !user.is_empty()
+                && passwords::verify_password(submission.password, &user[0].password)
+            {
                 println!("Password is correct");
-                cookies.add_private(Cookie::new("user_logged_in", user.to_string()));
-                let context = context! {user};
+                cookies.add_private(Cookie::new("user_logged_in", user[0].password.to_string()));
+                let email = &user[0].email;
+                let context = context! { email: &email};
                 Template::render("success", &context)
             } else {
                 println!("Password is incorrect or user does not exist");
                 let context = context! {user};
                 Template::render("login", &context)
             }
-            // let context = context! {user};
-            // Template::render("success", &context)
         }
         None => Template::render("login", &form.context),
     };
     println!("form.context.status() = {:?}", form.context.status());
     (form.context.status(), template)
+}
+
+#[get("/logout")]
+fn logout(cookies: &CookieJar<'_>) -> Template {
+    cookies.remove_private(Cookie::named("user_logged_in"));
+    Template::render("logout", &context! {})
+}
+
+pub struct User {
+    pub id: String,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for User {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        let cookies = request.cookies();
+        match cookies.get_private("user_logged_in") {
+            Some(cookie) => request::Outcome::Success(User {
+                id: cookie.value().to_string(),
+            }),
+            None => request::Outcome::Forward(()),
+        }
+    }
+}
+
+#[get("/profile")]
+fn profile(user: Option<User>) -> Result<Template, Template> {
+    match user {
+        Some(user) => {
+            let mut context = HashMap::new();
+            context.insert("user_logged_in", user.id.to_string());
+            Ok(Template::render("profile", &context))
+        }
+        None => {
+            let mut context = HashMap::new();
+            context.insert("user_logged_in", "nope");
+            Err(Template::render("login", &context! {}))
+        }
+    }
 }
 
 #[get("/add-project")]
@@ -148,6 +197,8 @@ fn rocket() -> _ {
                 add_project_post,
                 login_get,
                 login_post,
+                logout,
+                profile,
             ],
         )
         .attach(Template::fairing())

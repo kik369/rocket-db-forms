@@ -28,5 +28,8 @@
             <input type="password" name="password" id="password" placeholder="password" /><br />
             <input type="submit" value="Login" />
         </form>
+        {% if user_logged_in %}
+        {{ user_logged_in }}
+        {% else %} Sorry, no user_logged_in. {% endif %}
     </body>
 </html>
