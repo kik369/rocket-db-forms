@@ -2,7 +2,9 @@
 extern crate rocket;
 
 mod db_queries;
+mod passwords;
 
+use rocket::http::{Cookie, CookieJar};
 use rocket_dyn_templates::{context, Template};
 
 use rocket::{
@@ -43,20 +45,59 @@ fn add_user_get() -> Template {
 
 #[derive(FromForm, Debug)]
 struct FormDataUser<'v> {
-    name: &'v str,
-    data: &'v str,
+    email: &'v str,
+    password: &'v str,
 }
 
 #[post("/add-user", data = "<form>")]
 fn add_user_post<'r>(form: Form<Contextual<'r, FormDataUser<'r>>>) -> (Status, Template) {
     let template = match form.value {
         Some(ref submission) => {
-            db_queries::add_user(submission.name, submission.data);
+            db_queries::add_user(submission.email, submission.password);
             Template::render("add-user", &form.context)
         }
         None => Template::render("add-user", &form.context),
     };
 
+    (form.context.status(), template)
+}
+
+#[derive(FromForm, Debug)]
+struct LoginForm<'v> {
+    email: &'v str,
+    password: &'v str,
+}
+
+#[get("/login")]
+fn login_get() -> Template {
+    Template::render("login", &context! {})
+}
+
+#[post("/login", data = "<form>")]
+fn login_post<'r>(
+    cookies: &CookieJar<'_>,
+    form: Form<Contextual<'r, LoginForm<'r>>>,
+) -> (Status, Template) {
+    let template = match form.value {
+        Some(ref submission) => {
+            let user = db_queries::query_user_email(submission.email);
+            println!("user = {:?}", user);
+            if !user.is_empty() && passwords::verify_password(submission.password, &user) {
+                println!("Password is correct");
+                cookies.add_private(Cookie::new("user_logged_in", user.to_string()));
+                let context = context! {user};
+                Template::render("success", &context)
+            } else {
+                println!("Password is incorrect or user does not exist");
+                let context = context! {user};
+                Template::render("login", &context)
+            }
+            // let context = context! {user};
+            // Template::render("success", &context)
+        }
+        None => Template::render("login", &form.context),
+    };
+    println!("form.context.status() = {:?}", form.context.status());
     (form.context.status(), template)
 }
 
@@ -104,7 +145,9 @@ fn rocket() -> _ {
                 add_user_get,
                 add_user_post,
                 add_project_get,
-                add_project_post
+                add_project_post,
+                login_get,
+                login_post,
             ],
         )
         .attach(Template::fairing())

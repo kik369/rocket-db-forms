@@ -1,11 +1,13 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
+use crate::passwords;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Person {
-    id_pers: u8,
-    name: String,
-    data: String,
+pub struct User {
+    id: u8,
+    email: String,
+    pub password: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,55 +19,55 @@ pub struct Project {
     id_pers: u8,
 }
 
-pub fn query_all_users() -> Vec<Person> {
+pub fn query_all_users() -> Vec<User> {
     let connection = Connection::open("db.sqlite").unwrap();
-    let mut statement = connection.prepare("SELECT * FROM person").unwrap();
+    let mut statement = connection.prepare("SELECT * FROM user").unwrap();
     let items_iter = statement
         .query_map([], |row| {
-            let id_pers: u8 = row.get(0)?;
-            let name: String = row.get::<_, String>(1)?;
-            let data: String = row.get::<_, String>(2)?;
-            Ok(Person {
-                id_pers,
-                name,
-                data,
+            let id: u8 = row.get(0)?;
+            let email: String = row.get::<_, String>(1)?;
+            let password: String = row.get::<_, String>(2)?;
+            Ok(User {
+                id: id,
+                email: email,
+                password: password,
             })
         })
         .unwrap();
 
-    let mut serialized_data: Vec<Person> = Vec::new();
+    let mut serialized_data: Vec<User> = Vec::new();
 
-    for person_result in items_iter {
-        let person = person_result.unwrap();
-        serialized_data.push(person);
+    for user_result in items_iter {
+        let user = user_result.unwrap();
+        serialized_data.push(user);
     }
     serialized_data
 }
 
-pub fn query_user_id(id: u8) -> Vec<Person> {
+pub fn query_user_id(id: u8) -> Vec<User> {
     let id = id.to_string();
     let connection = Connection::open("db.sqlite").unwrap();
     let mut statement = connection
-        .prepare(format!("SELECT * FROM person WHERE id_pers = {}", id).as_str())
+        .prepare(format!("SELECT * FROM user WHERE id = {}", id).as_str())
         .unwrap();
     let items_iter = statement
         .query_map([], |row| {
-            let id_pers: u8 = row.get(0)?;
-            let name: String = row.get::<_, String>(1)?;
-            let data: String = row.get::<_, String>(2)?;
-            Ok(Person {
-                id_pers,
-                name,
-                data,
+            let id: u8 = row.get(0)?;
+            let email: String = row.get::<_, String>(1)?;
+            let password: String = row.get::<_, String>(2)?;
+            Ok(User {
+                id: id,
+                email: email,
+                password: password,
             })
         })
         .unwrap();
 
-    let mut serialized_data: Vec<Person> = Vec::new();
+    let mut serialized_data: Vec<User> = Vec::new();
 
-    for person_result in items_iter {
-        let person = person_result.unwrap();
-        serialized_data.push(person);
+    for user_result in items_iter {
+        let user = user_result.unwrap();
+        serialized_data.push(user);
     }
     serialized_data
 }
@@ -139,14 +141,15 @@ pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
     serialized_data
 }
 
-pub fn add_user(name: &str, data: &str) {
+pub fn add_user(email: &str, password: &str) {
+    let password = passwords::hash_password(password);
     let connection = Connection::open("db.sqlite").unwrap();
     match connection.execute(
-        "INSERT INTO person (name, data) VALUES (?1, ?2)",
-        params![name, data],
+        "INSERT INTO user (email, password) VALUES (?1, ?2)",
+        params![email, password],
     ) {
         Ok(updated) => println!("{} rows were updated", updated),
-        Err(err) => println!("update failed: {}", err),
+        Err(err) => println!("Update failed: {}", err),
     }
 }
 
@@ -159,4 +162,23 @@ pub fn add_project(name: &str, start: &str, end: &str, id_pers: u8) {
         Ok(updated) => println!("{} rows were updated", updated),
         Err(err) => println!("update failed: {}", err),
     }
+}
+
+pub fn query_user_email(email: &str) -> String {
+    let connection = Connection::open("db.sqlite").unwrap();
+    let mut statement = connection
+        .prepare(format!("SELECT password FROM user WHERE email = '{}'", email).as_str())
+        .unwrap();
+    let items_iter = statement
+        .query_map([], |row| Ok(row.get::<_, String>(0)?))
+        .unwrap();
+
+    let mut serialized_data: String = "".to_string();
+
+    for user_result in items_iter {
+        let user = user_result.unwrap();
+        println!("{}", user);
+        serialized_data.push_str(user.as_str());
+    }
+    serialized_data
 }

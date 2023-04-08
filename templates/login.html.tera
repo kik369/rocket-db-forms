@@ -11,7 +11,7 @@
         />
     </head>
     <body>
-        <h1>Add a new User to the database</h1>
+        <h1>Log in</h1>
         {% if values %}
         <h3>Submission Data</h3>
         <ul>
@@ -23,10 +23,10 @@
         </ul>
         <hr />
         {% endif %}
-        <form action="/add-user" method="post">
+        <form action="/login" method="post">
             <input type="email" name="email" id="email" placeholder="email" /><br />
-            <input type="text" name="password" id="password" placeholder="password" /><br />
-            <input type="submit" value="Add User" />
+            <input type="password" name="password" id="password" placeholder="password" /><br />
+            <input type="submit" value="Login" />
         </form>
     </body>
 </html>
