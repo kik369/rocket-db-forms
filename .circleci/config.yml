@@ -3,7 +3,7 @@ version: 2.1
 jobs:
     build_and_test:
         docker:
-            - image: 'cimg/rust:latest'
+            - image: 'cimg/rust:1.45.0'
         environment:
             - ROCKET_ENV: 'production'
         steps:
