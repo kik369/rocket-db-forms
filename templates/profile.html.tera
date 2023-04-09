@@ -1,5 +1,9 @@
 {% extends "base" %} {% block content %}
 <h1>Only for logged in users</h1>
-{% if user_logged_in %}
-{{ user_logged_in }}
-{% else %} Sorry, no user_logged_in. {% endif %}{% endblock %}
+<p>Hi, {{ user_q[0].email }}</p>
+{% for entry in projects %}
+<p>
+    {{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start:
+    {{ entry.start_date }}, End: {{ entry.end_date }}, user_id: {{ entry.user_id }}
+</p>
+{% endfor %}{% endblock %}

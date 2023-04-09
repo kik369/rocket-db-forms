@@ -3,5 +3,4 @@
 {% for entry in serialized_data %}
 {{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start: {{ entry.start }}, End:
 {{ entry.end }}, id_pers: {{ entry.id_pers }}
-<br />
 {% endfor %}{% endblock %}

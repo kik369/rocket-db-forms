@@ -38,7 +38,7 @@
         <main>{% block content %}{% endblock %}</main>
 
         <footer>
-            <p>Bye 🎈</p>
+            <p>{{now() | date(format="%Y")}}</p>
         </footer>
     </body>
 </html>

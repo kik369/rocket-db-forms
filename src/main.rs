@@ -120,40 +120,64 @@ fn logout(cookies: &CookieJar<'_>) -> Template {
     Template::render("logout", &context! {})
 }
 
-pub struct User {
-    pub id: String,
-}
+// #[derive(Debug)]
+// pub struct User {
+//     pub id: String,
+// }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
+impl<'r> FromRequest<'r> for db_queries::User {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let cookies = request.cookies();
+        println!("cookies in from_request = {:?}", cookies);
         match cookies.get_private("user_logged_in") {
-            Some(cookie) => request::Outcome::Success(User {
-                id: cookie.value().to_string(),
-            }),
+            Some(cookie) => {
+                // Get the user ID from the cookie
+                let user_id = cookie.value();
+                println!("cookie.value() in from_request = {:?}", cookie.value());
+
+                // Fetch the user from the database using the user ID
+                let user_opt = db_queries::query_user_pass(user_id.to_string());
+
+                // Return the user if found, otherwise forward the request
+                match user_opt {
+                    Some(user) => request::Outcome::Success(user),
+                    None => request::Outcome::Forward(()),
+                }
+            }
             None => request::Outcome::Forward(()),
         }
     }
 }
 
 #[get("/profile")]
-fn profile(user: Option<User>) -> Result<Template, Template> {
+fn profile(user: Option<db_queries::User>) -> Result<Template, Template> {
     match user {
         Some(user) => {
-            let mut context = HashMap::new();
-            context.insert("user_logged_in", user.id.to_string());
+            println!("user in profile route = {:?}", user);
+            // let mut context = HashMap::new();
+            // context.insert("user_logged_in", user.id.to_string());
+            let projects = db_queries::query_all_projects_for_user(user.id);
+            let user_q = db_queries::query_user_id(user.id);
+            let context = context! {projects, user_q};
             Ok(Template::render("profile", &context))
         }
         None => {
+            println!("user in profile route = {:?}", user);
             let mut context = HashMap::new();
             context.insert("user_logged_in", "nope");
             Err(Template::render("login", &context! {}))
         }
     }
 }
+
+// #[get("/all-projects-for-user/<id>")]
+// fn all_projects_for_user(id: u8) -> Template {
+//     let serialized_data = db_queries::query_all_projects_for_user(id);
+//     Template::render("all-projects-for-user", context! {serialized_data})
+// }
 
 #[get("/add-project")]
 fn add_project_get() -> Template {
@@ -163,21 +187,15 @@ fn add_project_get() -> Template {
 #[derive(FromForm, Debug)]
 struct FormDataProject<'v> {
     name: &'v str,
-    start: &'v str,
     end: &'v str,
-    id_pers: u8,
+    user_id: u8,
 }
 
 #[post("/add-project", data = "<form>")]
 fn add_project_post<'r>(form: Form<Contextual<'r, FormDataProject<'r>>>) -> (Status, Template) {
     let template = match form.value {
         Some(ref submission) => {
-            db_queries::add_project(
-                submission.name,
-                submission.start,
-                submission.end,
-                submission.id_pers,
-            );
+            db_queries::add_project(submission.name, submission.end, submission.user_id);
             Template::render("add-project", &form.context)
         }
         None => Template::render("add-project", &form.context),
