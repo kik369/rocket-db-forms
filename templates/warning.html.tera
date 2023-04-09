@@ -1,0 +1,7 @@
+{% if warning %}
+<p>
+    <mark>{{ warning.warning }}</mark>
+</p>
+{% else %}
+<p><mark>No warning ✔</mark></p>
+{% endif %}

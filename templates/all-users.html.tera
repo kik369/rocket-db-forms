@@ -1,6 +1,9 @@
 {% extends "base" %} {% block content %}
-<h1>Loop</h1>
-{% for entry in serialized_data %}
-{{ loop.index }} - Id: {{ entry.id_pers }}, Name: {{ entry.name }}, Data: {{ entry.data }}
+<h1>All Users</h1>
+{% include "warning" %} {% for entry in serialized_data %}
+<p>
+    <strong>Loop ({{ loop.index }})</strong> Id: {{ entry.id }}, Email: {{ entry.email }}, Hashed
+    password: <small>{{ entry.password }}</small>
+</p>
 <br />
 {% endfor %}{% endblock %}

@@ -1,13 +1,18 @@
 {% extends "base" %} {% block content %}
-<h1>User Loop</h1>
-{% for entry in serialized_data %}
-{{ loop.index }} - ID: {{ entry.id_pers }}, Name: {{ entry.name }}, Data: {{ entry.data }}
-<br />
-{% endfor %}
-
+<h1>User (no loop)</h1>
+{% include "warning" %}
+<p>
+    <code>serialized_data_user[0].email</code>
+</p>
+<p>
+    ID: {{ serialized_data_user[0].id }}, Email: {{ serialized_data_user[0].email }}, Hashed
+    password:
+    {{ serialized_data_user[0].password }}
+</p>
 <h1>Project Loop</h1>
-{% for entry in serialized_data2 %}
-{{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start: {{ entry.start }}, End:
-{{ entry.end }}, id_pers: {{ entry.id_pers }}
-<br />
+<p>
+    {% for entry in serialized_data_project %}
+    {{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start:
+    {{ entry.start_date }}, End: {{ entry.end_date }}, user_id: {{ entry.user_id }}
+</p>
 {% endfor %}{% endblock %}

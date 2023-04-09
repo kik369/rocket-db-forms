@@ -6,6 +6,7 @@ mod passwords;
 
 use rocket::http::{Cookie, CookieJar};
 use rocket::request::{self, FromRequest, Request};
+use rocket::response::Redirect;
 use rocket::{
     form::{Contextual, Form},
     http::Status,
@@ -15,7 +16,8 @@ use std::collections::HashMap;
 
 #[get("/")]
 fn home() -> Template {
-    Template::render("home", &context! {})
+    let warning = add_warning("not checking if user is logged in");
+    Template::render("home", context! {warning})
 }
 
 #[get("/all-users")]
@@ -75,10 +77,11 @@ struct LoginForm<'v> {
 }
 
 #[get("/login")]
-fn login_get(cookies: &CookieJar<'_>) -> Template {
-    let cookies = cookies.get_private("user_logged_in");
-    println!("cookies = {:?}", &cookies);
-    Template::render("login", context! {})
+fn login_get(user: Option<db_queries::User>) -> Result<Redirect, Template> {
+    match user {
+        Some(_user) => Ok(Redirect::to(uri!("/profile"))),
+        None => Err(Template::render("login", context! {})),
+    }
 }
 
 #[post("/login", data = "<form>")]
@@ -88,65 +91,59 @@ fn login_post<'r>(
 ) -> (Status, Template) {
     let template = match form.value {
         Some(ref submission) => {
-            println!(
-                "submission.email.to_string() for query_user_email = {:?}",
-                submission.email.to_string()
-            );
             let user = db_queries::query_user_email(submission.email.to_string());
-            println!("user = {:?}", user);
             if !user.is_empty()
                 && passwords::verify_password(submission.password, &user[0].password)
             {
-                println!("Password is correct");
-                cookies.add_private(Cookie::new("user_logged_in", user[0].password.to_string()));
-                // let email = &user[0].email;
-                let context = context! { user };
+                // password is correct
+                cookies.add_private(Cookie::new("user_id_in_cookie", user[0].id.to_string()));
+                let warning = add_warning("password is correct, user logged in, user_id_in_cookie");
+                let context = context! { user, warning };
                 Template::render("success", &context)
             } else {
-                println!("Password is incorrect or user does not exist");
-                let context = context! {user};
+                // password is not correct or user does not exist
+                let warning = add_warning("password is not correct or user does not exist");
+                let context = context! {user, warning};
                 Template::render("login", &context)
             }
         }
         None => Template::render("login", &form.context),
     };
-    println!("form.context.status() = {:?}", form.context.status());
     (form.context.status(), template)
 }
 
 #[get("/logout")]
 fn logout(cookies: &CookieJar<'_>) -> Template {
-    cookies.remove_private(Cookie::named("user_logged_in"));
-    Template::render("logout", &context! {})
+    cookies.remove_private(Cookie::named("user_id_in_cookie"));
+    let warning = add_warning("user logged out via GET /logout");
+    Template::render("logout", &context! {warning})
 }
 
-// #[derive(Debug)]
-// pub struct User {
-//     pub id: String,
-// }
-
+// this is a from request guard for User struct to check is user is logged in
+// this is an arbitrary validation policy
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for db_queries::User {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let cookies = request.cookies();
-        println!("cookies in from_request = {:?}", cookies);
-        match cookies.get_private("user_logged_in") {
+        match cookies.get_private("user_id_in_cookie") {
             Some(cookie) => {
-                // Get the user ID from the cookie
-                let user_id = cookie.value();
-                println!("cookie.value() in from_request = {:?}", cookie.value());
+                // Get the user ID from the cookie. It is stored as a string
+                let id = cookie.value().parse::<u8>().unwrap();
 
                 // Fetch the user from the database using the user ID
-                let user_opt = db_queries::query_user_pass(user_id.to_string());
+                let user_opt = db_queries::query_user_id(id);
 
                 // Return the user if found, otherwise forward the request
                 match user_opt {
+                    // user successfully retrieved from db
                     Some(user) => request::Outcome::Success(user),
+                    // user not found in db
                     None => request::Outcome::Forward(()),
                 }
             }
+            // no cookie found
             None => request::Outcome::Forward(()),
         }
     }
@@ -156,28 +153,26 @@ impl<'r> FromRequest<'r> for db_queries::User {
 fn profile(user: Option<db_queries::User>) -> Result<Template, Template> {
     match user {
         Some(user) => {
-            println!("user in profile route = {:?}", user);
-            // let mut context = HashMap::new();
-            // context.insert("user_logged_in", user.id.to_string());
             let projects = db_queries::query_all_projects_for_user(user.id);
-            let user_q = db_queries::query_user_id(user.id);
-            let context = context! {projects, user_q};
+            let user = db_queries::query_user_id(user.id);
+            let context = context! {projects, user};
             Ok(Template::render("profile", &context))
         }
         None => {
-            println!("user in profile route = {:?}", user);
-            let mut context = HashMap::new();
-            context.insert("user_logged_in", "nope");
-            Err(Template::render("login", &context! {}))
+            let warning = add_warning(
+                "user_id_in_cookie - false; redirect to login; profile not visible, if not logged in",
+            );
+            Err(Template::render("login", &context! {warning}))
         }
     }
 }
 
-// #[get("/all-projects-for-user/<id>")]
-// fn all_projects_for_user(id: u8) -> Template {
-//     let serialized_data = db_queries::query_all_projects_for_user(id);
-//     Template::render("all-projects-for-user", context! {serialized_data})
-// }
+// add warning text to template
+fn add_warning(warning_input: &str) -> HashMap<&'static str, &str> {
+    let mut warning = HashMap::new();
+    warning.insert("warning", warning_input);
+    warning
+}
 
 #[get("/add-project")]
 fn add_project_get() -> Template {

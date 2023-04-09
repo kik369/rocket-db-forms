@@ -13,7 +13,11 @@
         <header>
             <hgroup>
                 <h1>rocket-db-forms</h1>
+                {% if user[0].email %}
+                <h2>Hi, {{ user[0].email }}</h2>
+                {% else %}
                 <h2>Hi 👋</h2>
+                {% endif %}
             </hgroup>
             <nav aria-label="breadcrumb">
                 <ul>

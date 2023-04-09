@@ -1,9 +1,14 @@
 {% extends "base" %} {% block content %}
-<h1>Only for logged in users</h1>
-<p>Hi, {{ user_q[0].email }}</p>
-{% for entry in projects %}
+<h1>visible if user is logged in</h1>
+{% include "warning" %}
 <p>
-    {{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start:
-    {{ entry.start_date }}, End: {{ entry.end_date }}, user_id: {{ entry.user_id }}
+    Hi,<strong>{{ user.email }}</strong
+    >, you are logged in.
 </p>
-{% endfor %}{% endblock %}
+<h2>{{ user.email }}'s projects</h2>
+{% if projects %} {% for entry in projects %}
+<p>
+    ID: {{ entry.id_proj }}, Project Name: {{ entry.name }}, Start Date: {{ entry.start_date }}, End
+    Date: {{ entry.end_date }}, user_id: {{ entry.user_id }} ({{ user.email }})
+</p>
+{% endfor %}{%endif%}{% endblock %}

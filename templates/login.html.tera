@@ -1,6 +1,6 @@
 {% extends "base" %} {% block content %}
 <h1>Log In</h1>
-{% if values %}
+{% include "warning" %} {% if values %}
 <h3>Submission Data</h3>
 <ul>
     {% for key, value in values %}
@@ -31,6 +31,4 @@
     /><br />
     <input type="submit" value="Log In" />
 </form>
-{% if user_logged_in %}
-{{ user_logged_in }}
-{% else %} Sorry, no user_logged_in. {% endif %}{% endblock %}
+{% endblock %}

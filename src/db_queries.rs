@@ -1,9 +1,10 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
 use crate::passwords;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
     pub id: u8,
     pub email: String,
@@ -17,6 +18,23 @@ pub struct Project {
     start_date: String,
     end_date: String,
     user_id: u8,
+}
+
+fn serialize_data<T, E, I>(items: I, mut vector: Vec<T>) -> Vec<T>
+where
+    I: Iterator<Item = Result<T, E>>,
+    E: Debug,
+{
+    for item in items {
+        match item {
+            Ok(item) => vector.push(item),
+            Err(e) => println!(
+                "Encountered error while serializing database items: {:?}",
+                e
+            ),
+        }
+    }
+    vector
 }
 
 pub fn query_all_users() -> Vec<User> {
@@ -35,44 +53,11 @@ pub fn query_all_users() -> Vec<User> {
         })
         .unwrap();
 
-    let mut serialized_data: Vec<User> = Vec::new();
-
-    for user_result in items_iter {
-        let user = user_result.unwrap();
-        serialized_data.push(user);
-    }
-    serialized_data
+    let serialized_data: Vec<User> = Vec::new();
+    serialize_data(items_iter, serialized_data)
 }
 
-// pub fn query_user_id(id: u8) -> Vec<User> {
-//     let id = id.to_string();
-//     let connection = Connection::open("db.sqlite").unwrap();
-//     let mut statement = connection
-//         .prepare(format!("SELECT * FROM user WHERE id = {}", id).as_str())
-//         .unwrap();
-//     let items_iter = statement
-//         .query_map([], |row| {
-//             let id: u8 = row.get(0)?;
-//             let email: String = row.get::<_, String>(1)?;
-//             let password: String = row.get::<_, String>(2)?;
-//             Ok(User {
-//                 id: id,
-//                 email: email,
-//                 password: password,
-//             })
-//         })
-//         .unwrap();
-
-//     let mut serialized_data: Vec<User> = Vec::new();
-
-//     for user_result in items_iter {
-//         let user = user_result.unwrap();
-//         serialized_data.push(user);
-//     }
-//     serialized_data
-// }
-
-pub fn query_user_id(id: u8) -> Vec<User> {
+pub fn query_user_id(id: u8) -> Option<User> {
     let connection = Connection::open("db.sqlite").unwrap();
     let mut statement = connection
         .prepare(format!("SELECT * FROM user WHERE id = {}", id).as_str())
@@ -90,35 +75,33 @@ pub fn query_user_id(id: u8) -> Vec<User> {
         })
         .unwrap();
 
-    let mut serialized_data: Vec<User> = Vec::new();
-    for user_result in items_iter {
-        let user = user_result.unwrap();
-        serialized_data.push(user);
-    }
-    serialized_data
-}
-
-pub fn query_user_pass(pass: String) -> Option<User> {
-    let connection = Connection::open("db.sqlite").unwrap();
-    let mut statement = connection
-        .prepare(format!("SELECT * FROM user WHERE password = '{}'", pass).as_str())
-        .unwrap();
-    let mut items_iter = statement
-        .query_map([], |row| {
-            let id: u8 = row.get(0)?;
-            let email: String = row.get::<_, String>(1)?;
-            let password: String = row.get::<_, String>(2)?;
-            Ok(User {
-                id: id,
-                email: email,
-                password: password,
-            })
-        })
-        .unwrap();
-
-    // Return the first user found, if any
+    // let serialized_data: Vec<User> = Vec::new();
+    // let user = serialize_data(items_iter, serialized_data);
+    // user.into_iter().next()
     items_iter.next().transpose().unwrap_or(None)
 }
+
+// pub fn query_user_pass(pass: String) -> Option<User> {
+//     let connection = Connection::open("db.sqlite").unwrap();
+//     let mut statement = connection
+//         .prepare(format!("SELECT * FROM user WHERE password = '{}'", pass).as_str())
+//         .unwrap();
+//     let mut items_iter = statement
+//         .query_map([], |row| {
+//             let id: u8 = row.get(0)?;
+//             let email: String = row.get::<_, String>(1)?;
+//             let password: String = row.get::<_, String>(2)?;
+//             Ok(User {
+//                 id: id,
+//                 email: email,
+//                 password: password,
+//             })
+//         })
+//         .unwrap();
+
+//     // Return the first user found, if any
+//     items_iter.next().transpose().unwrap_or(None)
+// }
 
 pub fn query_all_projects() -> Vec<Project> {
     let connection = Connection::open("db.sqlite").unwrap();
@@ -140,13 +123,8 @@ pub fn query_all_projects() -> Vec<Project> {
         })
         .unwrap();
 
-    let mut serialized_data: Vec<Project> = Vec::new();
-
-    for project_result in items_iter {
-        let project = project_result.unwrap();
-        serialized_data.push(project);
-    }
-    serialized_data
+    let serialized_data: Vec<Project> = Vec::new();
+    serialize_data(items_iter, serialized_data)
 }
 
 pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
@@ -180,13 +158,8 @@ pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
         })
         .unwrap();
 
-    let mut serialized_data: Vec<Project> = Vec::new();
-
-    for project_result in items_iter {
-        let project = project_result.unwrap();
-        serialized_data.push(project);
-    }
-    serialized_data
+    let serialized_data: Vec<Project> = Vec::new();
+    serialize_data(items_iter, serialized_data)
 }
 
 pub fn add_user(email: &str, password: &str) {
@@ -231,12 +204,6 @@ pub fn query_user_email(email: String) -> Vec<User> {
         })
         .unwrap();
 
-    let mut serialized_data: Vec<User> = Vec::new();
-
-    for user_result in items_iter {
-        let user = user_result.unwrap();
-        serialized_data.push(user);
-    }
-    println!("query_user_email serialized_data{:?}", serialized_data);
-    serialized_data
+    let serialized_data: Vec<User> = Vec::new();
+    serialize_data(items_iter, serialized_data)
 }
