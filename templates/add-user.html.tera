@@ -1,32 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>rocket-db-forms</title>
-        <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css" />
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css"
-        />
-    </head>
-    <body>
-        <h1>Add a new User to the database</h1>
-        {% if values %}
-        <h3>Submission Data</h3>
-        <ul>
-            {% for key, value in values %}
-            <li>
-                <strong>{{ key }}</strong> - {{ value[0] }}
-            </li>
-            {% endfor %}
-        </ul>
-        <hr />
-        {% endif %}
-        <form action="/add-user" method="post">
-            <input type="email" name="email" id="email" placeholder="email" /><br />
-            <input type="text" name="password" id="password" placeholder="password" /><br />
-            <input type="submit" value="Add User" />
-        </form>
-    </body>
-</html>
+{% extends "base" %} {% block content %}
+<h1>Add a new User to the database</h1>
+{% if values %}
+<h3>Submission Data</h3>
+<ul>
+    {% for key, value in values %}
+    <li>
+        <strong>{{ key }}</strong> - {{ value[0] }}
+    </li>
+    {% endfor %}
+</ul>
+<hr />
+{% endif %}
+<form action="/add-user" method="post">
+    <input type="email" name="email" id="email" placeholder="email" /><br />
+    <input type="text" name="password" id="password" placeholder="password" /><br />
+    <input type="submit" value="Add User" />
+</form>
+{% endblock %}

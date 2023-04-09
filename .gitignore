@@ -1,2 +1,7 @@
-/target
+debug/
+target/
 Rocket.toml
+**/*.rs.bk
+*.pdb
+.vscode
+*.sqlite

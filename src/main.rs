@@ -13,6 +13,11 @@ use rocket::{
 use rocket_dyn_templates::{context, Template};
 use std::collections::HashMap;
 
+#[get("/")]
+fn home() -> Template {
+    Template::render("home", &context! {})
+}
+
 #[get("/all-users")]
 fn all_users() -> Template {
     let serialized_data = db_queries::query_all_users();
@@ -94,8 +99,8 @@ fn login_post<'r>(
             {
                 println!("Password is correct");
                 cookies.add_private(Cookie::new("user_logged_in", user[0].password.to_string()));
-                let email = &user[0].email;
-                let context = context! { email: &email};
+                // let email = &user[0].email;
+                let context = context! { user };
                 Template::render("success", &context)
             } else {
                 println!("Password is incorrect or user does not exist");
@@ -187,6 +192,7 @@ fn rocket() -> _ {
         .mount(
             "/",
             routes![
+                home,
                 all_users,
                 all_projects,
                 user_id,

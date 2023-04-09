@@ -1,27 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>rocket-db-forms</title>
-        <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css" />
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css"
-        />
-    </head>
-    <body>
-        <h1>User Loop</h1>
-        {% for entry in serialized_data %}
-        {{ loop.index }} - ID: {{ entry.id_pers }}, Name: {{ entry.name }}, Data: {{ entry.data }}
-        <br />
-        {% endfor %}
+{% extends "base" %} {% block content %}
+<h1>User Loop</h1>
+{% for entry in serialized_data %}
+{{ loop.index }} - ID: {{ entry.id_pers }}, Name: {{ entry.name }}, Data: {{ entry.data }}
+<br />
+{% endfor %}
 
-        <h1>Project Loop</h1>
-        {% for entry in serialized_data2 %}
-        {{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start:
-        {{ entry.start }}, End: {{ entry.end }}, id_pers: {{ entry.id_pers }}
-        <br />
-        {% endfor %}
-    </body>
-</html>
+<h1>Project Loop</h1>
+{% for entry in serialized_data2 %}
+{{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start: {{ entry.start }}, End:
+{{ entry.end }}, id_pers: {{ entry.id_pers }}
+<br />
+{% endfor %}{% endblock %}

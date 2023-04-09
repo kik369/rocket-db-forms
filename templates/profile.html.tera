@@ -1,19 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>rocket-db-forms</title>
-        <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css" />
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css"
-        />
-    </head>
-    <body>
-        <h1>Only for logged in users</h1>
-        {% if user_logged_in %}
-        {{ user_logged_in }}
-        {% else %} Sorry, no user_logged_in. {% endif %}
-    </body>
-</html>
+{% extends "base" %} {% block content %}
+<h1>Only for logged in users</h1>
+{% if user_logged_in %}
+{{ user_logged_in }}
+{% else %} Sorry, no user_logged_in. {% endif %}{% endblock %}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>rocket-db-forms</title>
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css"
+        />
+    </head>
+    <body>
+        <header>
+            <hgroup>
+                <h1>rocket-db-forms</h1>
+                <h2>Hi 👋</h2>
+            </hgroup>
+            <nav aria-label="breadcrumb">
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/login">Log In</a></li>
+                    <li><a href="/logout">Log Out</a></li>
+                    <li><a href="/profile">Profile</a></li>
+                    <li><a href="/add-user">Add User</a></li>
+                    <li><a href="/all-users">All Users</a></li>
+                    <li><a href="/add-project">Add Project</a></li>
+                    <li><a href="/all-projects">All Projects</a></li>
+                    <li>
+                        <a href="/user/3">User 3</a>
+                    </li>
+                    <li>
+                        <a href="/all-projects-for-user/3">All Projects 3</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>{% block content %}{% endblock %}</main>
+
+        <footer>
+            <p>Bye 🎈</p>
+        </footer>
+    </body>
+</html>
