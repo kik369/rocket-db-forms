@@ -1,7 +1,5 @@
 {% if warning %}
 <p>
-    <mark>{{ warning.warning }}</mark>
+    <mark>{{ warning.warning | safe }}</mark>
 </p>
-{% else %}
-<p><mark>No warning ✔</mark></p>
 {% endif %}

@@ -2,12 +2,11 @@
 <h1>User (no loop)</h1>
 {% include "warning" %}
 <p>
-    <code>serialized_data_user[0].email</code>
+    <code>serialized_data_user.email</code>
 </p>
 <p>
-    ID: {{ serialized_data_user[0].id }}, Email: {{ serialized_data_user[0].email }}, Hashed
-    password:
-    {{ serialized_data_user[0].password }}
+    ID: {{ serialized_data_user.id }}, Email: {{ serialized_data_user.email }}, Hashed password:
+    {{ serialized_data_user.password }}
 </p>
 <h1>Project Loop</h1>
 <p>

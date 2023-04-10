@@ -1,5 +1,5 @@
 {% extends "base" %} {% block content %}
 <h1>Success</h1>
 {% include "warning" %}
-<p>Hi, {{ user[0].email }}</p>
+<p>Hi, {{ user.email }}</p>
 {% endblock %}

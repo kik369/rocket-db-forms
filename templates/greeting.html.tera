@@ -1,0 +1,7 @@
+{% if user %}
+<h2>
+    Hi, <strong>{{ user.email }}</strong> / <a href="/logout">Log Out</a>
+</h2>
+{% else %}
+<h2>Hi 👋 / <a href="/login">Log In Here</a></h2>
+{% endif %}

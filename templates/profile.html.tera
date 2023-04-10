@@ -1,14 +1,14 @@
 {% extends "base" %} {% block content %}
-<h1>visible if user is logged in</h1>
+<h1>Profile page for logged in users</h1>
 {% include "warning" %}
-<p>
-    Hi,<strong>{{ user.email }}</strong
-    >, you are logged in.
-</p>
 <h2>{{ user.email }}'s projects</h2>
 {% if projects %} {% for entry in projects %}
 <p>
-    ID: {{ entry.id_proj }}, Project Name: {{ entry.name }}, Start Date: {{ entry.start_date }}, End
-    Date: {{ entry.end_date }}, user_id: {{ entry.user_id }} ({{ user.email }})
+    <strong
+        >{{ entry.id_proj }} <a href="/project/{{ entry.id_proj }}">{{ entry.name }}</a></strong
+    ><br />
+    Start Date: {{ entry.start_date }}<br />
+    End Date: {{ entry.end_date }}<br />
+    Project belongt to user_id: {{ entry.user_id }} ({{ user.email }})
 </p>
 {% endfor %}{%endif%}{% endblock %}

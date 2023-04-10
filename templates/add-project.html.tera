@@ -12,9 +12,7 @@
 <hr />
 {% endif %}
 <form action="/add-project" method="post">
-    <input type="text" name="name" id="name" placeholder="name" /><br />
-    <input type="text" name="end" id="end" placeholder="end" /><br />
-    <input type="number" name="user_id" id="user_id" placeholder="user_id" /><br />
+    <input type="text" name="name" id="name" placeholder="Project Name" /><br />
     <input type="submit" value="Add Project" />
 </form>
 {% endblock %}

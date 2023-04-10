@@ -1,7 +1,9 @@
 {% extends "base" %} {% block content %}
 <h1>Loop</h1>
-{% include "warning" %} {% for entry in serialized_data %}
-{{ loop.index }} - ID: {{ entry.id_proj }}, Name: {{ entry.name }}, Start: {{ entry.start }}, End:
-{{ entry.end }}, id_pers: {{ entry.id_pers }}
+{% include "warning" %} {% for entry in all_projects %}
+<p>
+    <strong>Loop ({{ loop.index }})</strong> Id: {{ entry.id_proj }}, Project Name:
+    {{ entry.name }}, Start Date: <small>{{ entry.start_date }}</small>
+</p>
 <br />
 {% endfor %}{% endblock %}

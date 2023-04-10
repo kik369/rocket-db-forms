@@ -1,0 +1,16 @@
+{% extends "base" %} {% block content %}
+<h1>project details page</h1>
+{% include "warning" %}
+<hgroup>
+    <h2>{{ project.name }}</h2>
+    <h3>details for project id ({{ project.id_proj }}), user ({{ user.email }})</h3>
+</hgroup>
+<p>
+    <a href="/edit/project/{{ project.id_proj }}" role="button">Edit Project</a>
+    <a href="/delete/project/{{ project.id_proj }}" role="button">Delete Project</a>
+</p>
+<p>
+    {{ project.id_proj }}, Name: {{ project.name }}, Start: {{ project.start_date }}, End:
+    {{ project.end_date }}, user_id: {{ project.user_id }}
+</p>
+{% endblock %}
