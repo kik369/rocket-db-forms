@@ -12,6 +12,9 @@
     <body>
         <header>
             <hgroup>
+                {% if msg %}
+                <mark>{{ msg }}</mark>
+                {% endif %}
                 <h1>rocket-db-forms</h1>
                 {% include "greeting" %}
             </hgroup>

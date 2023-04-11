@@ -21,11 +21,13 @@ use std::collections::HashMap;
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
     type Error = std::convert::Infallible;
-    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<User, Self::Error> {
         if let Some(cookie) = request.cookies().get_private("user_id_in_cookie") {
             if let Ok(user_id) = cookie.value().parse::<u8>() {
                 match query_user_by_id(user_id) {
-                    Ok(user) => return Outcome::Success(user),
+                    Ok(user) => {
+                        return Outcome::Success(user);
+                    }
                     Err(_) => return Outcome::Forward(()),
                 }
             }
@@ -58,27 +60,103 @@ struct LoginForm<'v> {
     password: &'v str,
 }
 
-#[get("/")]
-fn index(user: User, flash: Option<FlashMessage<'_>>) -> Flash<Redirect> {
-    let msg = flash
-        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
-        .unwrap_or("no flash message".to_string());
-    println!("flash msg: {:#?}", msg);
-    println!("user: {:#?}", user);
+// add warning text to template. this will be removed
+fn add_warning(warning_input: &str) -> HashMap<&'static str, &str> {
+    let mut warning = HashMap::new();
+    warning.insert("warning", warning_input);
+    warning
+}
 
-    Flash::success(Redirect::to(uri!(profile)), "user is logged in")
+fn get_flash_msg(flash: Option<FlashMessage<'_>>) -> String {
+    flash
+        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
+        .unwrap_or_default()
+}
+
+#[get("/")]
+fn index(user: User) -> Template {
+    Template::render("home", context! {user})
 }
 
 #[get("/", rank = 2)]
-fn no_auth_index(flash: Option<FlashMessage<'_>>) -> Flash<Redirect> {
-    let msg = flash
-        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
-        .unwrap_or("no flash message".to_string());
-    println!("flash msg: {:#?}", msg);
-    Flash::error(
-        Redirect::to(uri!(login_get_no_auth)),
-        "user is not logged in",
+fn index_no_auth() -> Template {
+    Template::render("home", context! {})
+}
+
+#[get("/profile")]
+fn profile(user: User, flash: Option<FlashMessage<'_>>) -> Result<Template, Flash<Redirect>> {
+    let msg = get_flash_msg(flash);
+    let projects = query_all_projects_for_user(user.id);
+    let context = context! {projects, user, msg};
+    Ok(Template::render("profile", &context))
+}
+
+#[get("/profile", rank = 2)]
+fn profile_no_auth() -> Flash<Redirect> {
+    Flash::success(
+        Redirect::to(uri!(login_get_no_auth())),
+        "user from /profile not logged in; redirecting to login",
     )
+}
+
+#[get("/login")]
+fn login_get(_user: User) -> Flash<Redirect> {
+    Flash::success(
+        Redirect::to(uri!(profile())),
+        "user from /login already logged in; redirecting to /profile",
+    )
+}
+
+#[get("/login", rank = 2)]
+fn login_get_no_auth(flash: Option<FlashMessage<'_>>) -> Template {
+    let msg = get_flash_msg(flash);
+    Template::render("login", context! {msg})
+}
+
+#[post("/login", data = "<form>")]
+fn login_post<'r>(
+    cookies: &CookieJar<'_>,
+    form: Form<Contextual<'r, LoginForm<'r>>>,
+) -> (Status, Template) {
+    let template = match form.value {
+        // form contains data
+        Some(ref submission) => {
+            let user = query_user_by_email(submission.email.to_string());
+            match user {
+                Ok(user) => {
+                    if passwords::verify_password(submission.password, user.password.as_str()) {
+                        // password is correct
+                        cookies.add_private(Cookie::new("user_id_in_cookie", user.id.to_string()));
+                        let warning =
+                            add_warning("password is correct, user logged in, user_id_in_cookie");
+                        let context = context! { user, warning };
+                        Template::render("success", &context)
+                    } else {
+                        // password is not correct
+                        let warning = add_warning("user found ind db; password is not correct");
+                        let context = context! {warning};
+                        Template::render("login", &context)
+                    }
+                }
+                Err(e) => {
+                    // form contains data; user does not exist
+                    let formatted_warning = format!("user not found in db; error: {}", e);
+                    let warning = add_warning(formatted_warning.as_str());
+                    let context = context! {warning};
+                    Template::render("login", &context)
+                }
+            } // end of match user
+        }
+        // form does not contain data
+        None => Template::render("login", &form.context),
+    };
+    (form.context.status(), template)
+}
+
+#[get("/logout")]
+fn logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
+    cookies.remove_private(Cookie::named("user_id_in_cookie"));
+    Flash::success(Redirect::to(uri!(login_get_no_auth())), "user logged out")
 }
 
 // TODO all-users only be visible to admins
@@ -232,102 +310,6 @@ fn add_user_post<'r>(form: Form<Contextual<'r, UserRegistrationForm<'r>>>) -> (S
     (form.context.status(), template)
 }
 
-#[get("/login")]
-fn login_get_auth(_user: Option<User>, flash: Option<FlashMessage<'_>>) -> Flash<Redirect> {
-    let msg = flash
-        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
-        .unwrap_or("no flash message".to_string());
-    println!("msg: {}", msg);
-
-    Flash::success(Redirect::to(uri!(profile)), "user is logged in")
-}
-#[get("/login", rank = 2)]
-fn login_get_no_auth(flash: Option<FlashMessage<'_>>) -> Template {
-    let msg = flash
-        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
-        .unwrap_or("no flash message".to_string());
-    println!("flash msg: {:#?}", msg);
-
-    Template::render("login", context! {})
-}
-
-#[post("/login", data = "<form>")]
-fn login_post<'r>(
-    cookies: &CookieJar<'_>,
-    form: Form<Contextual<'r, LoginForm<'r>>>,
-) -> (Status, Template) {
-    let template = match form.value {
-        // form contains data
-        Some(ref submission) => {
-            let user = query_user_by_email(submission.email.to_string());
-
-            match user {
-                Ok(user) => {
-                    if passwords::verify_password(submission.password, user.password.as_str()) {
-                        // password is correct
-                        cookies.add_private(Cookie::new("user_id_in_cookie", user.id.to_string()));
-                        let warning =
-                            add_warning("password is correct, user logged in, user_id_in_cookie");
-                        let context = context! { user, warning };
-                        Template::render("success", &context)
-                    } else {
-                        // password is not correct
-                        let warning = add_warning("user found ind db; password is not correct");
-                        let context = context! {warning};
-                        Template::render("login", &context)
-                    }
-                }
-                Err(e) => {
-                    // form contains data; user does not exist
-                    let formatted_warning = format!("user not found in db; error: {}", e);
-                    let warning = add_warning(formatted_warning.as_str());
-                    let context = context! {warning};
-                    Template::render("login", &context)
-                }
-            } // end of match user
-        }
-        // form does not contain data
-        None => Template::render("login", &form.context),
-    };
-    (form.context.status(), template)
-}
-
-#[get("/logout")]
-fn logout(cookies: &CookieJar<'_>) -> Template {
-    cookies.remove_private(Cookie::named("user_id_in_cookie"));
-    let warning = add_warning("user logged out via GET /logout");
-    Template::render("logout", &context! {warning})
-}
-
-// retrieves Option<User>
-#[get("/profile")]
-fn profile(user: Option<User>, flash: Option<FlashMessage<'_>>) -> Result<Template, Template> {
-    let msg = flash
-        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
-        .unwrap_or("no flash message".to_string());
-    println!("flash msg: {:#?}", msg);
-    match user {
-        Some(user) => {
-            let projects = query_all_projects_for_user(user.id);
-            let context = context! {projects, user};
-            Ok(Template::render("profile", &context))
-        }
-        None => {
-            let warning = add_warning(
-                "user_id_in_cookie - false; redirect to login; profile not visible, if not logged in",
-            );
-            Err(Template::render("login", &context! {warning}))
-        }
-    }
-}
-
-// add warning text to template
-fn add_warning(warning_input: &str) -> HashMap<&'static str, &str> {
-    let mut warning = HashMap::new();
-    warning.insert("warning", warning_input);
-    warning
-}
-
 #[launch]
 fn rocket() -> _ {
     rocket::build()
@@ -335,7 +317,12 @@ fn rocket() -> _ {
             "/",
             routes![
                 index,
-                no_auth_index,
+                index_no_auth,
+                profile,
+                profile_no_auth,
+                login_get,
+                login_get_no_auth,
+                login_post,
                 all_users,
                 all_projects,
                 user_id,
@@ -344,11 +331,7 @@ fn rocket() -> _ {
                 add_user_post,
                 add_project_get,
                 add_project_post,
-                login_get_auth,
-                login_get_no_auth,
-                login_post,
                 logout,
-                profile,
                 project_id,
                 edit_project_get,
                 edit_project_post,
