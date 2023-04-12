@@ -1,5 +1,6 @@
 {% extends "base" %} {% block content %}
-<h1>Success</h1>
-{% include "warning" %}
-<p>Hi, {{ user.email }}</p>
+<hgroup>
+    <h2>success</h2>
+    <p>hi, <strong>{{ user.email }}</strong>, you're logged in</p>
+</hgroup>
 {% endblock %}

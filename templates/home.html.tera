@@ -1,3 +1,6 @@
 {% extends "base" %} {% block content %}
-<h1>home</h1>
+<hgroup>
+    <h2>home (index)</h2>
+    <p>anyone can access</p>
+</hgroup>
 {% endblock %}

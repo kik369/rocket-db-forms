@@ -8,6 +8,7 @@ use db_queries::{
     add_project, add_user, edit_project, query_all_projects, query_all_projects_for_user,
     query_all_users, query_project_by_id, query_user_by_email, query_user_by_id, User,
 };
+use passwords::verify_password;
 use rocket::http::{Cookie, CookieJar};
 use rocket::request::{self, FlashMessage, FromRequest, Outcome, Request};
 use rocket::response::{Flash, Redirect};
@@ -52,12 +53,6 @@ struct AddProjectForm<'v> {
 struct EditProjectForm<'v> {
     name: &'v str,
     end_date: &'v str,
-}
-
-#[derive(FromForm, Debug)]
-struct LoginForm<'v> {
-    email: &'v str,
-    password: &'v str,
 }
 
 // add warning text to template. this will be removed
@@ -113,44 +108,49 @@ fn login_get_no_auth(flash: Option<FlashMessage<'_>>) -> Template {
     Template::render("login", context! {msg})
 }
 
+#[derive(FromForm, Debug)]
+struct LoginForm<'v> {
+    email: &'v str,
+    password: &'v str,
+}
+
 #[post("/login", data = "<form>")]
 fn login_post<'r>(
     cookies: &CookieJar<'_>,
     form: Form<Contextual<'r, LoginForm<'r>>>,
-) -> (Status, Template) {
-    let template = match form.value {
-        // form contains data
+) -> Result<Template, Flash<Redirect>> {
+    match form.value {
         Some(ref submission) => {
+            // TODO: something with the to_string() and as_str() calls
+            // TODO: also check query_user_by_email()
             let user = query_user_by_email(submission.email.to_string());
             match user {
                 Ok(user) => {
-                    if passwords::verify_password(submission.password, user.password.as_str()) {
-                        // password is correct
+                    if verify_password(submission.password, user.password.as_str()) {
                         cookies.add_private(Cookie::new("user_id_in_cookie", user.id.to_string()));
-                        let warning =
-                            add_warning("password is correct, user logged in, user_id_in_cookie");
-                        let context = context! { user, warning };
-                        Template::render("success", &context)
+                        Ok({
+                            let msg =
+                                format!("password correct; user logged in; user_id_in_cookie");
+                            Template::render("success", context! { user, msg })
+                        })
                     } else {
-                        // password is not correct
-                        let warning = add_warning("user found ind db; password is not correct");
-                        let context = context! {warning};
-                        Template::render("login", &context)
+                        Err(Flash::success(
+                            Redirect::to(uri!(login_get_no_auth())),
+                            "user found in db; password is not correct",
+                        ))
                     }
                 }
-                Err(e) => {
-                    // form contains data; user does not exist
-                    let formatted_warning = format!("user not found in db; error: {}", e);
-                    let warning = add_warning(formatted_warning.as_str());
-                    let context = context! {warning};
-                    Template::render("login", &context)
-                }
-            } // end of match user
+                Err(e) => Err(Flash::success(
+                    Redirect::to(uri!(login_get_no_auth())),
+                    format!("user not found in db; error: {}", e),
+                )),
+            }
         }
-        // form does not contain data
-        None => Template::render("login", &form.context),
-    };
-    (form.context.status(), template)
+        None => Err(Flash::success(
+            Redirect::to(uri!(login_get_no_auth())),
+            "no form.value",
+        )),
+    }
 }
 
 #[get("/logout")]

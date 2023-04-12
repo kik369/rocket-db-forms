@@ -108,8 +108,6 @@ pub fn query_user_by_id(id: u8) -> Result<User, Error> {
 }
 
 pub fn query_user_by_email(email: String) -> Result<User, Error> {
-    let email = email.to_string();
-
     let conn = Connection::open("db.sqlite").unwrap();
 
     let mut stmt =

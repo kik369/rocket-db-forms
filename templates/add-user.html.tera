@@ -1,20 +1,25 @@
 {% extends "base" %} {% block content %}
-<h1>Add a new User to the database</h1>
-{% include "warning" %} {% if values %}
-<h3>Submission Data</h3>
+<hgroup>
+    <h2>add a new user to the database</h2>
+    <p>or <a href="/login">login</a></p>
+</hgroup>
+<form action="/add-user" method="post">
+    <label for="email">email</label>
+    <input type="email" name="email" id="email" placeholder="email" /><br />
+    <label for="password">password</label>
+    <input type="password" name="password" id="password" placeholder="password" /><br />
+    <label for="password1">password repeat</label>
+    <input type="password" name="password1" id="password1" placeholder="password repeat" /><br />
+    <input type="submit" value="add user" />
+</form>
+{% if values %}
+<p>submission data</p>
 <ul>
     {% for key, value in values %}
     <li>
-        <strong>{{ key }}</strong> - {{ value[0] }}
+        {{ key }}: <strong>{{ value[0] }}</strong>
     </li>
     {% endfor %}
 </ul>
 <hr />
-{% endif %}
-<form action="/add-user" method="post">
-    <input type="email" name="email" id="email" placeholder="email" /><br />
-    <input type="password" name="password" id="password" placeholder="password" /><br />
-    <input type="password" name="password1" id="password1" placeholder="password1" /><br />
-    <input type="submit" value="Add User" />
-</form>
-{% endblock %}
+{% endif %} {% endblock %}

@@ -1,34 +1,30 @@
 {% extends "base" %} {% block content %}
-<h1>Log In</h1>
-{% include "warning" %} {% if values %}
-<h3>Submission Data</h3>
+<hgroup>
+    <h2>log in</h2>
+    <p>or <a href="/add-user">register</a> a new user</p>
+</hgroup>
+<form action="/login" method="post">
+    <label for="email">email</label>
+    <input
+        type="email"
+        name="email"
+        placeholder="email address"
+        aria-label="email address"
+        id="email"
+        required
+    />
+    <label for="password">password</label>
+    <input type="password" name="password" placeholder="password" id="password" /><br />
+    <input type="submit" value="log in" />
+</form>
+{% if values %}
+<p>submission data</p>
 <ul>
     {% for key, value in values %}
     <li>
-        <strong>{{ key }}</strong> - {{ value[0] }}
+        {{ key }}: <strong>{{ value[0] }}</strong>
     </li>
     {% endfor %}
 </ul>
 <hr />
-{% endif %}
-<form action="/login" method="post">
-    <label for="email">Email</label>
-    <input
-        type="email"
-        name="email"
-        placeholder="Email address"
-        aria-label="Email address"
-        id="email"
-        required
-    />
-    <label for="password">Password</label>
-    <input
-        type="password"
-        name="password"
-        placeholder="Password"
-        aria-label="Email address"
-        id="password"
-    /><br />
-    <input type="submit" value="Log In" />
-</form>
-{% endblock %}
+{% endif %} {% endblock %}

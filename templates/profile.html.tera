@@ -1,12 +1,14 @@
 {% extends "base" %} {% block content %}
-<h1>Profile page for logged in users</h1>
-{% include "warning" %}
-<h2>{{ user.email }}'s projects</h2>
+<hgroup>
+    <h2>profile page for logged in users</h2>
+    <p>{{ user.email }}'s projects</p>
+</hgroup>
 {% if projects %} {% for entry in projects %}
 <p>
     <strong
         >{{ entry.id_proj }} <a href="/project/{{ entry.id_proj }}">{{ entry.name }}</a></strong
-    ><br />
+    >
+    <br />
     Start Date: {{ entry.start_date }}<br />
     End Date: {{ entry.end_date }}<br />
     Project belongt to user_id: {{ entry.user_id }} ({{ user.email }})
