@@ -5,26 +5,9 @@
 </hgroup>
 <form action="/login" method="post">
     <label for="email">email</label>
-    <input
-        type="email"
-        name="email"
-        placeholder="email address"
-        aria-label="email address"
-        id="email"
-        required
-    />
+    <input type="email" name="email" placeholder="email address" aria-label="email address" id="email" required />
     <label for="password">password</label>
     <input type="password" name="password" placeholder="password" id="password" /><br />
     <input type="submit" value="log in" />
 </form>
-{% if values %}
-<p>submission data</p>
-<ul>
-    {% for key, value in values %}
-    <li>
-        {{ key }}: <strong>{{ value[0] }}</strong>
-    </li>
-    {% endfor %}
-</ul>
-<hr />
-{% endif %} {% endblock %}
+{% endblock %}

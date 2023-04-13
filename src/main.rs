@@ -5,8 +5,9 @@ mod db_queries;
 mod passwords;
 
 use db_queries::{
-    add_project, add_user, edit_project, query_all_projects, query_all_projects_for_user,
-    query_all_users, query_project_by_id, query_user_by_email, query_user_by_id, User,
+    add_project, add_user, edit_project, query_admin_by_id, query_all_projects,
+    query_all_projects_for_user, query_all_users, query_project_by_id, query_user_by_email,
+    query_user_by_id, Admin, User,
 };
 use passwords::verify_password;
 use rocket::http::{Cookie, CookieJar};
@@ -14,6 +15,7 @@ use rocket::request::{self, FlashMessage, FromRequest, Outcome, Request};
 use rocket::response::{Flash, Redirect};
 use rocket::{
     form::{Contextual, Form},
+    fs::{relative, FileServer},
     http::Status,
 };
 use rocket_dyn_templates::{context, Template};
@@ -22,12 +24,36 @@ use std::collections::HashMap;
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
     type Error = std::convert::Infallible;
+
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<User, Self::Error> {
         if let Some(cookie) = request.cookies().get_private("user_id_in_cookie") {
             if let Ok(user_id) = cookie.value().parse::<u8>() {
                 match query_user_by_id(user_id) {
                     Ok(user) => {
                         return Outcome::Success(user);
+                    }
+                    Err(_) => return Outcome::Forward(()),
+                }
+            }
+        }
+        Outcome::Forward(())
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Admin {
+    type Error = std::convert::Infallible;
+
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Admin, Self::Error> {
+        if let Some(cookie) = request.cookies().get_private("user_id_in_cookie") {
+            if let Ok(user_id) = cookie.value().parse::<u8>() {
+                match query_admin_by_id(user_id) {
+                    Ok(admin) => {
+                        if admin.user.admin {
+                            return Outcome::Success(admin);
+                        } else {
+                            return Outcome::Forward(());
+                        }
                     }
                     Err(_) => return Outcome::Forward(()),
                 }
@@ -55,7 +81,7 @@ struct EditProjectForm<'v> {
     end_date: &'v str,
 }
 
-// add warning text to template. this will be removed
+// add warning text to template.  will be removed
 fn add_warning(warning_input: &str) -> HashMap<&'static str, &str> {
     let mut warning = HashMap::new();
     warning.insert("warning", warning_input);
@@ -159,24 +185,6 @@ fn logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
     Flash::success(Redirect::to(uri!(login_get_no_auth())), "user logged out")
 }
 
-// TODO all-users only be visible to admins
-#[get("/all-users")]
-fn all_users() -> Template {
-    let all_users = query_all_users();
-    let warning = add_warning("this should only be visible to admins");
-    let context = context! {all_users, warning};
-    Template::render("all-users", &context)
-}
-
-// TODO all-projects only be visible to admins
-#[get("/all-projects")]
-fn all_projects() -> Template {
-    let all_projects = query_all_projects();
-    let warning = add_warning("this should only be visible to admins");
-    let context = context! {all_projects, warning};
-    Template::render("all-projects", &context)
-}
-
 #[get("/user/<id>")]
 fn user_id(id: u8) -> Template {
     let serialized_data_user = query_user_by_id(id).unwrap();
@@ -202,7 +210,7 @@ fn project_id(id: u8, user: Option<User>) -> Result<Template, Template> {
                     let context = context! {user, project, warning};
                     Ok(Template::render("project-id", &context))
                 } else {
-                    let warning = add_warning("user.id != project.user_id; this is not your project or project does not exist");
+                    let warning = add_warning("user.id != project.user_id;  is not your project or project does not exist");
                     let context = context! {user, warning};
                     Err(Template::render("profile", &context))
                 }
@@ -253,7 +261,7 @@ fn edit_project_get(user: Option<User>, id: u8) -> Result<Redirect, Template> {
     match user {
         Some(user) => {
             let project = query_project_by_id(id).unwrap();
-            let warning = add_warning("you are logged in; you can EDIT this project");
+            let warning = add_warning("you are logged in; you can EDIT  project");
             let context = context! {user, project, warning};
             Err(Template::render("project-edit", &context))
         }
@@ -310,6 +318,25 @@ fn add_user_post<'r>(form: Form<Contextual<'r, UserRegistrationForm<'r>>>) -> (S
     (form.context.status(), template)
 }
 
+#[get("/all-users")]
+fn all_users(user: User, admin: Admin) -> Template {
+    let all_users = query_all_users();
+    let context = context! {all_users, user, admin};
+    Template::render("all-users", &context)
+}
+
+#[get("/all-projects")]
+fn all_projects(user: User, admin: Admin) -> Template {
+    let all_projects = query_all_projects();
+    let context = context! {all_projects, user, admin};
+    Template::render("all-projects", &context)
+}
+
+#[catch(404)]
+fn not_found() -> Template {
+    Template::render("catchers/404", context! {})
+}
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
@@ -323,19 +350,21 @@ fn rocket() -> _ {
                 login_get,
                 login_get_no_auth,
                 login_post,
-                all_users,
-                all_projects,
+                logout,
                 user_id,
                 all_projects_for_user,
                 add_user_get,
                 add_user_post,
                 add_project_get,
                 add_project_post,
-                logout,
                 project_id,
                 edit_project_get,
                 edit_project_post,
+                all_users,
+                all_projects,
             ],
         )
+        .mount("/", FileServer::from(relative!("static")))
+        .register("/", catchers![not_found])
         .attach(Template::fairing())
 }

@@ -10,6 +10,11 @@ pub struct User {
     pub id: u8,
     pub email: String,
     pub password: String,
+    pub admin: bool,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Admin {
+    pub user: User,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -48,10 +53,12 @@ pub fn query_all_users() -> Vec<User> {
             let id: u8 = row.get(0)?;
             let email: String = row.get::<_, String>(1)?;
             let password: String = row.get::<_, String>(2)?;
+            let admin: bool = row.get(4)?;
             Ok(User {
                 id: id,
                 email: email,
                 password: password,
+                admin: admin,
             })
         })
         .unwrap();
@@ -93,15 +100,44 @@ pub fn query_user_by_id(id: u8) -> Result<User, Error> {
         let id: u8 = row.get(0)?;
         let email: String = row.get::<_, String>(1)?;
         let password: String = row.get::<_, String>(2)?;
+        let admin: bool = row.get(4)?;
         let user = User {
             id,
             email,
             password,
+            admin,
         };
         Ok(user)
     })?;
     if let Some(user_result) = items_iter.next() {
         user_result
+    } else {
+        Err(Error::QueryReturnedNoRows)
+    }
+}
+
+pub fn query_admin_by_id(id: u8) -> Result<Admin, Error> {
+    let conn = Connection::open("db.sqlite").unwrap();
+
+    let mut stmt = conn.prepare(format!("SELECT * FROM user WHERE id = {}", id).as_str())?;
+
+    let mut items_iter = stmt.query_map([], |row| {
+        let id: u8 = row.get(0)?;
+        let email: String = row.get::<_, String>(1)?;
+        let password: String = row.get::<_, String>(2)?;
+        let admin: bool = row.get(4)?;
+        let admin = Admin {
+            user: User {
+                id,
+                email,
+                password,
+                admin,
+            },
+        };
+        Ok(admin)
+    })?;
+    if let Some(admin_result) = items_iter.next() {
+        admin_result
     } else {
         Err(Error::QueryReturnedNoRows)
     }
@@ -116,10 +152,12 @@ pub fn query_user_by_email(email: String) -> Result<User, Error> {
         let id: u8 = row.get(0)?;
         let email: String = row.get::<_, String>(1)?;
         let password: String = row.get::<_, String>(2)?;
+        let admin: bool = row.get(4)?;
         let user = User {
             id,
             email,
             password,
+            admin,
         };
         Ok(user)
     })?;
