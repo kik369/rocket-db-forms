@@ -328,7 +328,8 @@ fn all_users(user: User, admin: Admin) -> Template {
 #[get("/all-projects")]
 fn all_projects(user: User, admin: Admin) -> Template {
     let all_projects = query_all_projects();
-    let context = context! {all_projects, user, admin};
+    let all_users = query_all_users();
+    let context = context! {all_projects, all_users, user, admin};
     Template::render("all-projects", &context)
 }
 

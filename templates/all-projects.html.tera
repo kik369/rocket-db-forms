@@ -1,9 +1,20 @@
 {% extends "base" %} {% block content %}
-<h1>Loop</h1>
-{% include "warning" %} {% for entry in all_projects %}
-<p>
-    <strong>Loop ({{ loop.index }})</strong> Id: {{ entry.id_proj }}, Project Name:
-    {{ entry.name }}, Start Date: <small>{{ entry.start_date }}</small>
+<hgroup>
+    <h2>all projects</h2>
+    <p>only visible to admins</p>
+</hgroup>
+{% for entry in all_projects %}
+<p>{% set tmp_id = entry.user_id - 1 %}
+    <strong>loop ({{ loop.index }})</strong><br>
+    id_proj: {{ entry.id_proj }}, project name: {{ entry.name }}<br>
+    start date: {{ entry.start_date }}, end date: {{ entry.end_date }}<br>
+    belongs to user_id: {{ entry.user_id }} ({{ all_users[tmp_id].email }}), admin:
+    {% if all_users[tmp_id].admin %}
+    <b><ins>{{ all_users[tmp_id].admin }}</ins></b>
+    {% else %}
+    <b>{{ all_users[tmp_id].admin }}</b>
+    {% endif %}
+    <br>
 </p>
-<br />
-{% endfor %}{% endblock %}
+{% endfor %}
+{% endblock %}

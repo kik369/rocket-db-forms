@@ -44,7 +44,14 @@
     </header>
     <main>{% block content %}{% endblock %}</main>
     <footer>
-        <p>{{now() | date(format="%Y")}}</p>
+        <table><!-- workaround to get a divider -->
+            <tbody>
+                <tr>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table><!-- workaround to get a divider -->
+        <p><b>{{now() | date(format="%Y")}}</b></p>
     </footer>
 </body>
 

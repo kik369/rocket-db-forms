@@ -1,16 +1,16 @@
 {% extends "base" %} {% block content %}
 <hgroup>
     <h2>all users</h2>
-    <p>only visible for admins</p>
+    <p>only visible to admins</p>
 </hgroup>
 {% for entry in all_users %}
-<p><strong>Loop ({{ loop.index }})</strong><br>
-    Id: {{ entry.id }}, Email: {{ entry.email }}, Admin:
+<p><strong>loop ({{ loop.index }})</strong><br>
+    id: {{ entry.id }}, email: {{ entry.email }}, admin:
     {% if entry.admin %}
     <b><ins>{{ entry.admin }}</ins></b>
     {% else %}
     <b>{{ entry.admin }}</b>
     {% endif %}<br>
-    Hashed password: {{ entry.password }}
+    hashed password: {{ entry.password }}
 </p>
 {% endfor %}{% endblock %}
