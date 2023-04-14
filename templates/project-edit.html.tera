@@ -1,6 +1,5 @@
 {% extends "base" %} {% block content %}
 <h1>Edit a Project</h1>
-{% include "warning" %}
 <form action="/edit/project/{{ project.id_proj }}" method="post">
     <input type="text" name="name" id="name" value="{{ project.name }}" /><br />
     <input

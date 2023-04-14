@@ -1,6 +1,5 @@
 {% extends "base" %} {% block content %}
 <h1>project details page</h1>
-{% include "warning" %}
 <hgroup>
     <h2>{{ project.name }}</h2>
     <h3>details for project id ({{ project.id_proj }}), user ({{ user.email }})</h3>

@@ -1,5 +1,4 @@
 {% extends "base" %} {% block content %}
 <h1>project updated</h1>
-{% include "warning" %}
 <p>Hi, {{ user.email }}, your project has been updated</p>
 {% endblock %}

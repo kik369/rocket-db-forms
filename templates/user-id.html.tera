@@ -1,6 +1,5 @@
 {% extends "base" %} {% block content %}
 <h1>User (no loop)</h1>
-{% include "warning" %}
 <p>
     <code>serialized_data_user.email</code>
 </p>

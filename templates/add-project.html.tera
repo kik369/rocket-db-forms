@@ -1,6 +1,6 @@
 {% extends "base" %} {% block content %}
 <h1>Add a new Project to the database</h1>
-{% include "warning" %} {% if values %}
+{% if values %}
 <h3>Submission Data</h3>
 <ul>
     {% for key, value in values %}

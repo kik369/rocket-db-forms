@@ -1,58 +1,51 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>rocket</title>
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css"
+        />
+        <script
+            src="https://unpkg.com/htmx.org@1.9.0"
+            integrity="sha384-aOxz9UdWG0yBiyrTwPeMibmaoq07/d3a96GCbb9x60f3mOt5zwkjdbcHFnKH8qls"
+            crossorigin="anonymous"
+        ></script>
+    </head>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>rocket</title>
-    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css" />
-    <script src="https://unpkg.com/htmx.org@1.9.0"
-        integrity="sha384-aOxz9UdWG0yBiyrTwPeMibmaoq07/d3a96GCbb9x60f3mOt5zwkjdbcHFnKH8qls"
-        crossorigin="anonymous"></script>
-</head>
-
-<body>
-    <header>
-        <hgroup>
-            {% if msg %}
-            <mark>{{ msg }}</mark>
-            {% endif %}
-            <h1>rocket-db-forms-auth</h1>
-            {% include "greeting" %}
-        </hgroup>
-        <nav aria-label="breadcrumb">
-            <ul>
-                <li><a href="/">Home</a></li>
-
-                {% if not user %}
-                <li><a href="/login">Log In</a></li>
-                <li><a href="/add-user">Register</a></li>
+    <body>
+        <header>
+            <hgroup>
+                {% if msg %}
+                <mark>{{ msg }}</mark>
                 {% endif %}
+                <h1>rocket-db-forms-auth</h1>
+                {% include "greeting" %}
+            </hgroup>
+            <nav aria-label="breadcrumb">
+                <ul>
+                    <li><a href="/">Home</a></li>
 
-                {% if user %}
-                <li><a href="/logout">Log Out</a></li>
-                <li><a href="/profile">Profile</a></li>
-                <li><a href="/add-project">Add Project</a></li>
-                {% endif %}
-
-                {% if user.admin %}
-                <li><a href="/all-users">All Users</a></li>
-                <li><a href="/all-projects">All Projects</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </header>
-    <main>{% block content %}{% endblock %}</main>
-    <footer>
-        <table><!-- workaround to get a divider -->
-            <tbody>
-                <tr>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table><!-- workaround to get a divider -->
-        <p><b>{{now() | date(format="%Y")}}</b></p>
-    </footer>
-</body>
-
+                    {% if not user %}
+                    <li><a href="/login">Log In</a></li>
+                    <li><a href="/add-user">Register</a></li>
+                    {% endif %} {% if user %}
+                    <li><a href="/profile">Profile</a></li>
+                    <li><a href="/add-project">Add Project</a></li>
+                    {% endif %} {% if user.admin %}
+                    <li><a href="/all-users">All Users</a></li>
+                    <li><a href="/all-projects">All Projects</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </header>
+        <main>{% block content %}{% endblock %}</main>
+        <footer>
+            <p>
+                <b>{{now() | date(format="%Y")}} </b><span id="egg"></span>
+            </p>
+        </footer>
+    </body>
 </html>

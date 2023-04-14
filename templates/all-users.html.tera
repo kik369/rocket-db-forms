@@ -4,13 +4,13 @@
     <p>only visible to admins</p>
 </hgroup>
 {% for entry in all_users %}
-<p><strong>loop ({{ loop.index }})</strong><br>
-    id: {{ entry.id }}, email: {{ entry.email }}, admin:
+<p>
+    id: {{ entry.id }}, email: {{ entry.email }}
     {% if entry.admin %}
-    <b><ins>{{ entry.admin }}</ins></b>
+    <b><ins>admin</ins></b>
     {% else %}
     <b>{{ entry.admin }}</b>
-    {% endif %}<br>
+    {% endif %}<br />
     hashed password: {{ entry.password }}
 </p>
 {% endfor %}{% endblock %}

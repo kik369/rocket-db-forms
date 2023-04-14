@@ -1,20 +1,30 @@
-{% extends "base" %} {% block content %}
+{% extends "base" %}{% block content %}
 <hgroup>
     <h2>all projects</h2>
     <p>only visible to admins</p>
 </hgroup>
-{% for entry in all_projects %}
-<p>{% set tmp_id = entry.user_id - 1 %}
-    <strong>loop ({{ loop.index }})</strong><br>
-    id_proj: {{ entry.id_proj }}, project name: {{ entry.name }}<br>
-    start date: {{ entry.start_date }}, end date: {{ entry.end_date }}<br>
-    belongs to user_id: {{ entry.user_id }} ({{ all_users[tmp_id].email }}), admin:
-    {% if all_users[tmp_id].admin %}
-    <b><ins>{{ all_users[tmp_id].admin }}</ins></b>
-    {% else %}
-    <b>{{ all_users[tmp_id].admin }}</b>
+<p>
+    {% set ended = project_count - no_end_date %} {{ project_count }} total projects ➖
+    {{ no_end_date }} in progress <i>{{ percentage | round }}%</i>➖ {{ ended }} ended
+    <i>{{ (ended / project_count) * 100 | round }}%</i>
+</p>
+{% for entry in all_projects %} {% set tmp_id = entry.user_id - 1 %}{% set_global loop_idx =
+loop.index %}
+<p>
+    <b
+        ><a href="/project/{{ entry.id_proj }}">{{ entry.name }}</a></b
+    ><br />
+    id_proj: {{ entry.id_proj }} ➖ start_date: {{ entry.start_date }} {% if entry.end_date %} ➖
+    end_date: {{ entry.end_date }} {% endif %}<br />
+    <b>{{ all_users[tmp_id].email }}</b> ➖ user_id {{ entry.user_id }}
+    {% if all_users[tmp_id].admin %} ➖
+    <b><ins> admin</ins></b>
     {% endif %}
-    <br>
 </p>
 {% endfor %}
-{% endblock %}
+<p>
+    <i
+        ><b>{{ loop_idx }}</b> entries</i
+    >
+</p>
+{% endblock %} // count the number of entries with end_date

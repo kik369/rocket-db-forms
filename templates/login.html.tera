@@ -5,9 +5,18 @@
 </hgroup>
 <form action="/login" method="post">
     <label for="email">email</label>
-    <input type="email" name="email" placeholder="email address" aria-label="email address" id="email" required />
+    <input
+        type="email"
+        name="email"
+        placeholder="email address"
+        aria-label="email address"
+        id="email"
+        required
+    />
     <label for="password">password</label>
     <input type="password" name="password" placeholder="password" id="password" /><br />
-    <input type="submit" value="log in" />
+    <div hx-get="svg-loaders/rings.svg" hx-target="previous h2" hx-swap="outerHTML">
+        <input type="submit" value="log in" />
+    </div>
 </form>
 {% endblock %}

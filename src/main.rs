@@ -19,7 +19,6 @@ use rocket::{
     http::Status,
 };
 use rocket_dyn_templates::{context, Template};
-use std::collections::HashMap;
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
@@ -81,17 +80,15 @@ struct EditProjectForm<'v> {
     end_date: &'v str,
 }
 
-// add warning text to template.  will be removed
-fn add_warning(warning_input: &str) -> HashMap<&'static str, &str> {
-    let mut warning = HashMap::new();
-    warning.insert("warning", warning_input);
-    warning
-}
-
 fn get_flash_msg(flash: Option<FlashMessage<'_>>) -> String {
     flash
         .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
         .unwrap_or_default()
+}
+
+#[get("/egg")]
+fn egg() -> String {
+    "🥚".to_string()
 }
 
 #[get("/")]
@@ -200,25 +197,30 @@ fn all_projects_for_user(id: u8) -> Template {
 }
 
 #[get("/project/<id>")]
-fn project_id(id: u8, user: Option<User>) -> Result<Template, Template> {
+fn project_id(id: u8, user: Option<User>) -> Result<Template, Flash<Redirect>> {
     match user {
         // user is logged in
         Some(user) => match query_project_by_id(id) {
             Ok(project) => {
                 if user.id == project.user_id {
-                    let warning = add_warning("user.id == project.user_id; display project page");
-                    let context = context! {user, project, warning};
+                    let context = context! {user, project};
                     Ok(Template::render("project-id", &context))
                 } else {
-                    let warning = add_warning("user.id != project.user_id;  is not your project or project does not exist");
-                    let context = context! {user, warning};
-                    Err(Template::render("profile", &context))
+                    Err(Flash::success(
+                        Redirect::to(uri!("/profile")),
+                        "user.id != project.user_id",
+                    ))
                 }
             }
-            Err(_) => Err(Template::render("profile", &context! {user})),
+            Err(_) => Err({
+                Flash::success(
+                    Redirect::to(uri!("/profile")),
+                    "can't retrieve project from db",
+                )
+            }),
         },
         // user is not logged in
-        None => Ok(Template::render("login", context! {})),
+        None => Err(Flash::success(Redirect::to(uri!("/login")), "")),
     }
 }
 
@@ -226,8 +228,7 @@ fn project_id(id: u8, user: Option<User>) -> Result<Template, Template> {
 fn add_project_get(user: Option<User>) -> Result<Redirect, Template> {
     match user {
         Some(user) => {
-            let warning = add_warning("you are logged in; you can add a project");
-            let context = context! {user, warning};
+            let context = context! {user};
             Err(Template::render("add-project", &context))
         }
         None => Ok(Redirect::to(uri!("/login"))),
@@ -243,14 +244,7 @@ fn add_project_post<'r>(
         Some(user) => {
             let form_data = form.value.as_ref().unwrap();
             add_project(form_data.name, user.id);
-
-            let formatted_warning = format!(
-                "you are logged in; project '<b>{}</b>' added",
-                form_data.name
-            );
-            let warning = add_warning(formatted_warning.as_str());
-            let context = context! {user, warning};
-            Ok(Template::render("add-project", &context))
+            Ok(Template::render("add-project", context! {user}))
         }
         None => Err(Redirect::to(uri!("/login"))),
     }
@@ -261,8 +255,7 @@ fn edit_project_get(user: Option<User>, id: u8) -> Result<Redirect, Template> {
     match user {
         Some(user) => {
             let project = query_project_by_id(id).unwrap();
-            let warning = add_warning("you are logged in; you can EDIT  project");
-            let context = context! {user, project, warning};
+            let context = context! {user, project};
             Err(Template::render("project-edit", &context))
         }
         None => Ok(Redirect::to(uri!("/login"))),
@@ -279,8 +272,7 @@ fn edit_project_post<'r>(
         Some(user) => {
             let form_data = form.value.as_ref().unwrap();
             edit_project(id, form_data.name, form_data.end_date, user.id);
-            let warning = add_warning("project updated");
-            let context = context! {user, warning};
+            let context = context! {user};
             Err(Template::render("project-updated", &context))
         }
         None => Ok(Redirect::to(uri!("/login"))),
@@ -291,11 +283,7 @@ fn edit_project_post<'r>(
 fn add_user_get(user: Option<User>) -> Result<Redirect, Template> {
     match user {
         Some(_user) => Ok(Redirect::to(uri!("/profile"))),
-        None => {
-            let warning = add_warning("not logged in; register a new user");
-            let context = &context! {warning};
-            Err(Template::render("add-user", &context))
-        }
+        None => Err(Template::render("add-user", context! {})),
     }
 }
 
@@ -307,9 +295,7 @@ fn add_user_post<'r>(form: Form<Contextual<'r, UserRegistrationForm<'r>>>) -> (S
                 add_user(submission.email, submission.password);
                 Template::render("add-user", &form.context)
             } else {
-                let warning = add_warning("passwords do not match");
-                let context = context! {warning};
-                Template::render("add-user", &context)
+                Template::render("add-user", context! {})
             }
         }
         None => Template::render("add-user", &form.context),
@@ -329,7 +315,16 @@ fn all_users(user: User, admin: Admin) -> Template {
 fn all_projects(user: User, admin: Admin) -> Template {
     let all_projects = query_all_projects();
     let all_users = query_all_users();
-    let context = context! {all_projects, all_users, user, admin};
+
+    let no_end_date = all_projects
+        .iter()
+        .filter(|project| project.end_date.is_empty())
+        .count();
+    let project_count = all_projects.len();
+    let percentage = (no_end_date as f64 / project_count as f64) * 100.0;
+
+    let context =
+        context! {all_projects, all_users, user, admin, no_end_date, project_count, percentage};
     Template::render("all-projects", &context)
 }
 
@@ -344,6 +339,7 @@ fn rocket() -> _ {
         .mount(
             "/",
             routes![
+                egg,
                 index,
                 index_no_auth,
                 profile,

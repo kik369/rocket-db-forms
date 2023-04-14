@@ -1,9 +1,8 @@
+use crate::passwords;
 use chrono::NaiveDateTime;
 use rusqlite::{params, Connection, Error};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-
-use crate::passwords;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
