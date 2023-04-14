@@ -1,7 +1,11 @@
 {% extends "base" %} {% block content %}
-<h1>Add a new Project to the database</h1>
+
+<hgroup>
+    <h2>add a new project</h2>
+    <p>if a user is logged in</p>
+</hgroup>
 {% if values %}
-<h3>Submission Data</h3>
+<p>submission data</p>
 <ul>
     {% for key, value in values %}
     <li>
@@ -12,7 +16,8 @@
 <hr />
 {% endif %}
 <form action="/add-project" method="post">
-    <input type="text" name="name" id="name" placeholder="Project Name" /><br />
-    <input type="submit" value="Add Project" />
+    <label for="name">project title</label>
+    <input type="text" name="name" id="name" /><br />
+    <input type="submit" value="add project" />
 </form>
 {% endblock %}

@@ -151,11 +151,7 @@ fn login_post<'r>(
                 Ok(user) => {
                     if verify_password(submission.password, user.password.as_str()) {
                         cookies.add_private(Cookie::new("user_id_in_cookie", user.id.to_string()));
-                        Ok({
-                            let msg =
-                                format!("password correct; user logged in; user_id_in_cookie");
-                            Template::render("success", context! { user, msg })
-                        })
+                        Ok(Template::render("success", context! { user }))
                     } else {
                         Err(Flash::success(
                             Redirect::to(uri!(login_get_no_auth())),
@@ -177,9 +173,9 @@ fn login_post<'r>(
 }
 
 #[get("/logout")]
-fn logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
+fn logout(cookies: &CookieJar<'_>) -> Redirect {
     cookies.remove_private(Cookie::named("user_id_in_cookie"));
-    Flash::success(Redirect::to(uri!(login_get_no_auth())), "user logged out")
+    Redirect::to(uri!(login_get_no_auth()))
 }
 
 #[get("/user/<id>")]
@@ -239,14 +235,14 @@ fn add_project_get(user: Option<User>) -> Result<Redirect, Template> {
 fn add_project_post<'r>(
     form: Form<Contextual<'r, AddProjectForm<'r>>>,
     user: Option<User>,
-) -> Result<Template, Redirect> {
+) -> Redirect {
     match user {
         Some(user) => {
             let form_data = form.value.as_ref().unwrap();
-            add_project(form_data.name, user.id);
-            Ok(Template::render("add-project", context! {user}))
+            let id = add_project(form_data.name, user.id);
+            Redirect::to(uri!(project_id(id)))
         }
-        None => Err(Redirect::to(uri!("/login"))),
+        None => Redirect::to(uri!("/login")),
     }
 }
 
@@ -267,15 +263,14 @@ fn edit_project_post<'r>(
     form: Form<Contextual<'r, EditProjectForm<'r>>>,
     user: Option<User>,
     id: u8,
-) -> Result<Redirect, Template> {
+) -> Redirect {
     match user {
         Some(user) => {
             let form_data = form.value.as_ref().unwrap();
-            edit_project(id, form_data.name, form_data.end_date, user.id);
-            let context = context! {user};
-            Err(Template::render("project-updated", &context))
+            let id = edit_project(id, form_data.name, form_data.end_date, user.id);
+            Redirect::to(uri!(project_id(id)))
         }
-        None => Ok(Redirect::to(uri!("/login"))),
+        None => Redirect::to(uri!("/login")),
     }
 }
 
@@ -307,7 +302,9 @@ fn add_user_post<'r>(form: Form<Contextual<'r, UserRegistrationForm<'r>>>) -> (S
 #[get("/all-users")]
 fn all_users(user: User, admin: Admin) -> Template {
     let all_users = query_all_users();
-    let context = context! {all_users, user, admin};
+    let user_count = all_users.len();
+    let admin_count = all_users.iter().filter(|user| user.admin == true).count();
+    let context = context! {all_users, user, admin, user_count, admin_count};
     Template::render("all-users", &context)
 }
 
@@ -331,6 +328,11 @@ fn all_projects(user: User, admin: Admin) -> Template {
 #[catch(404)]
 fn not_found() -> Template {
     Template::render("catchers/404", context! {})
+}
+
+#[catch(500)]
+fn server_error() -> Template {
+    Template::render("catchers/500", context! {})
 }
 
 #[launch]
@@ -362,6 +364,6 @@ fn rocket() -> _ {
             ],
         )
         .mount("/", FileServer::from(relative!("static")))
-        .register("/", catchers![not_found])
+        .register("/", catchers![not_found, server_error])
         .attach(Template::fairing())
 }

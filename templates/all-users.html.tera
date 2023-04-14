@@ -3,14 +3,12 @@
     <h2>all users</h2>
     <p>only visible to admins</p>
 </hgroup>
+<p>
+    <b>{{ user_count }}</b> users ➖ {{ admin_count }} admin{% if admin_count > 1 %}s{% endif %}
+</p>
 {% for entry in all_users %}
 <p>
-    id: {{ entry.id }}, email: {{ entry.email }}
-    {% if entry.admin %}
-    <b><ins>admin</ins></b>
-    {% else %}
-    <b>{{ entry.admin }}</b>
-    {% endif %}<br />
-    hashed password: {{ entry.password }}
+    <b>{{ entry.email }}</b> ➖ id: {{ entry.id }}{% if entry.admin %} ➖ <b><ins>admin</ins></b
+    >{% endif %}<br />
 </p>
 {% endfor %}{% endblock %}

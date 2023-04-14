@@ -1,7 +1,7 @@
 {% if user %}
 <h2>
     Hi, <strong>{{ user.email }}</strong
-    >{% if user.admin %} 😎{% endif %} / <a href="/logout">Log Out</a>
+    >{% if user.admin %} 🔹{% endif %} / <a href="/logout">Log Out</a>
 </h2>
 {% else %}
 <h2>

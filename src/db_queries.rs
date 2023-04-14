@@ -242,27 +242,43 @@ pub fn add_user(email: &str, password: &str) {
     }
 }
 
-pub fn add_project(name: &str, user_id: u8) {
+// pub fn add_project(name: &str, user_id: u8) {
+//     let connection = Connection::open("db.sqlite").unwrap();
+//     match connection.execute(
+//         "INSERT INTO project (name, end_date, user_id) VALUES (?1, ?2, ?3)",
+//         params![name, "", user_id],
+//     ) {
+//         Ok(updated) => println!("{} rows were updated", updated),
+//         Err(err) => println!("update failed: {}", err),
+//     }
+// }
+
+// add project and return the id of the added project for redirect
+pub fn add_project(name: &str, user_id: u8) -> u8 {
     let connection = Connection::open("db.sqlite").unwrap();
-    match connection.execute(
-        "INSERT INTO project (name, end_date, user_id) VALUES (?1, ?2, ?3)",
-        params![name, "", user_id],
-    ) {
-        Ok(updated) => println!("{} rows were updated", updated),
-        Err(err) => println!("update failed: {}", err),
-    }
+    connection
+        .execute(
+            "INSERT INTO project (name, end_date, user_id) VALUES (?1, ?2, ?3)",
+            params![name, "", user_id],
+        )
+        .unwrap();
+
+    let last_insert_id = connection.last_insert_rowid() as u8;
+    last_insert_id
 }
 
-pub fn edit_project(id: u8, name: &str, end_date: &str, user_id: u8) {
+// edit project and return the id of the edited project for redirect
+pub fn edit_project(id: u8, name: &str, end_date: &str, user_id: u8) -> u8 {
     let end_date = parse_date(end_date);
     let connection = Connection::open("db.sqlite").unwrap();
-    match connection.execute(
-        "REPLACE INTO project (id_proj, name, end_date, user_id) VALUES (?1, ?2, ?3, ?4)",
-        params![id, name, end_date, user_id],
-    ) {
-        Ok(updated) => println!("{} rows were updated", updated),
-        Err(err) => println!("update failed: {}", err),
-    }
+    connection
+        .execute(
+            "REPLACE INTO project (id_proj, name, end_date, user_id) VALUES (?1, ?2, ?3, ?4)",
+            params![id, name, end_date, user_id],
+        )
+        .unwrap();
+    let last_edit_id = connection.last_insert_rowid() as u8;
+    last_edit_id
 }
 
 // parses from "2020-01-01T00:00:00" to "2020-01-01 00:00:00"

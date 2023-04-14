@@ -4,12 +4,12 @@
     <p>only visible to admins</p>
 </hgroup>
 <p>
-    {% set ended = project_count - no_end_date %} {{ project_count }} total projects ➖
-    {{ no_end_date }} in progress <i>{{ percentage | round }}%</i>➖ {{ ended }} ended
-    <i>{{ (ended / project_count) * 100 | round }}%</i>
+    {% set complete = project_count - no_end_date %} <b>{{ project_count }}</b> projects ➖
+    <b>{{ no_end_date }}</b> in progress <i>{{ percentage | round }}%</i> ➖
+    <b>{{ complete }}</b> complete
+    <i>{{ (complete / project_count) * 100 | round }}%</i>
 </p>
-{% for entry in all_projects %} {% set tmp_id = entry.user_id - 1 %}{% set_global loop_idx =
-loop.index %}
+{% for entry in all_projects %} {% set tmp_id = entry.user_id - 1 %}
 <p>
     <b
         ><a href="/project/{{ entry.id_proj }}">{{ entry.name }}</a></b
@@ -21,10 +21,4 @@ loop.index %}
     <b><ins> admin</ins></b>
     {% endif %}
 </p>
-{% endfor %}
-<p>
-    <i
-        ><b>{{ loop_idx }}</b> entries</i
-    >
-</p>
-{% endblock %} // count the number of entries with end_date
+{% endfor %} {% endblock %}
