@@ -102,11 +102,10 @@ fn index_no_auth() -> Template {
 }
 
 #[get("/profile")]
-fn profile(user: User, flash: Option<FlashMessage<'_>>) -> Result<Template, Flash<Redirect>> {
+fn profile(user: User, flash: Option<FlashMessage<'_>>) -> Template {
     let msg = get_flash_msg(flash);
     let projects = query_all_projects_for_user(user.id);
-    let context = context! {projects, user, msg};
-    Ok(Template::render("profile", &context))
+    Template::render("profile", context! {projects, user, msg})
 }
 
 #[get("/profile", rank = 2)]
@@ -138,10 +137,7 @@ struct LoginForm<'v> {
 }
 
 #[post("/login", data = "<form>")]
-fn login_post<'r>(
-    cookies: &CookieJar<'_>,
-    form: Form<Contextual<'r, LoginForm<'r>>>,
-) -> Result<Template, Flash<Redirect>> {
+fn login_post<'r>(cookies: &CookieJar<'_>, form: Form<Contextual<'r, LoginForm<'r>>>) -> Template {
     match form.value {
         Some(ref submission) => {
             // TODO: something with the to_string() and as_str() calls
@@ -151,24 +147,15 @@ fn login_post<'r>(
                 Ok(user) => {
                     if verify_password(submission.password, user.password.as_str()) {
                         cookies.add_private(Cookie::new("user_id_in_cookie", user.id.to_string()));
-                        Ok(Template::render("success", context! { user }))
+                        Template::render("success", context! { user })
                     } else {
-                        Err(Flash::success(
-                            Redirect::to(uri!(login_get_no_auth())),
-                            "user found in db; password is not correct",
-                        ))
+                        Template::render("login", context! {})
                     }
                 }
-                Err(e) => Err(Flash::success(
-                    Redirect::to(uri!(login_get_no_auth())),
-                    format!("user not found in db; error: {}", e),
-                )),
+                Err(_) => Template::render("login", context! {}),
             }
         }
-        None => Err(Flash::success(
-            Redirect::to(uri!(login_get_no_auth())),
-            "no form.value",
-        )),
+        None => Template::render("login", context! {}),
     }
 }
 
@@ -193,30 +180,25 @@ fn all_projects_for_user(id: u8) -> Template {
 }
 
 #[get("/project/<id>")]
-fn project_id(id: u8, user: Option<User>) -> Result<Template, Flash<Redirect>> {
+fn project_id(id: u8, user: Option<User>) -> Template {
     match user {
         // user is logged in
         Some(user) => match query_project_by_id(id) {
+            // project found
             Ok(project) => {
                 if user.id == project.user_id {
-                    let context = context! {user, project};
-                    Ok(Template::render("project-id", &context))
+                    // user is the owner of the project
+                    Template::render("project-id", context! {user, project})
                 } else {
-                    Err(Flash::success(
-                        Redirect::to(uri!("/profile")),
-                        "user.id != project.user_id",
-                    ))
+                    // user is not the owner of the project
+                    Template::render("profile", context! {user})
                 }
             }
-            Err(_) => Err({
-                Flash::success(
-                    Redirect::to(uri!("/profile")),
-                    "can't retrieve project from db",
-                )
-            }),
+            // project not found
+            Err(_) => Template::render("profile", context! {user}),
         },
         // user is not logged in
-        None => Err(Flash::success(Redirect::to(uri!("/login")), "")),
+        None => Template::render("login", context! {}),
     }
 }
 
@@ -303,7 +285,7 @@ fn add_user_post<'r>(form: Form<Contextual<'r, UserRegistrationForm<'r>>>) -> (S
 fn all_users(user: User, admin: Admin) -> Template {
     let all_users = query_all_users();
     let user_count = all_users.len();
-    let admin_count = all_users.iter().filter(|user| user.admin == true).count();
+    let admin_count = all_users.iter().filter(|user| user.admin).count();
     let context = context! {all_users, user, admin, user_count, admin_count};
     Template::render("all-users", &context)
 }
