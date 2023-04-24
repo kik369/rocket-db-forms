@@ -170,7 +170,7 @@ fn user_id(id: u8) -> Template {
     let serialized_data_user = query_user_by_id(id).unwrap();
     let serialized_data_project = query_all_projects_for_user(id);
     let context = context! {serialized_data_user, serialized_data_project};
-    Template::render("user-id", &context)
+    Template::render("user-id", context)
 }
 
 #[get("/all-projects-for-user/<id>")]
@@ -207,7 +207,7 @@ fn add_project_get(user: Option<User>) -> Result<Redirect, Template> {
     match user {
         Some(user) => {
             let context = context! {user};
-            Err(Template::render("add-project", &context))
+            Err(Template::render("add-project", context))
         }
         None => Ok(Redirect::to(uri!("/login"))),
     }
@@ -234,7 +234,7 @@ fn edit_project_get(user: Option<User>, id: u8) -> Result<Redirect, Template> {
         Some(user) => {
             let project = query_project_by_id(id).unwrap();
             let context = context! {user, project};
-            Err(Template::render("project-edit", &context))
+            Err(Template::render("project-edit", context))
         }
         None => Ok(Redirect::to(uri!("/login"))),
     }
@@ -287,7 +287,7 @@ fn all_users(user: User, admin: Admin) -> Template {
     let user_count = all_users.len();
     let admin_count = all_users.iter().filter(|user| user.admin).count();
     let context = context! {all_users, user, admin, user_count, admin_count};
-    Template::render("all-users", &context)
+    Template::render("all-users", context)
 }
 
 #[get("/all-projects")]
@@ -304,7 +304,7 @@ fn all_projects(user: User, admin: Admin) -> Template {
 
     let context =
         context! {all_projects, all_users, user, admin, no_end_date, project_count, percentage};
-    Template::render("all-projects", &context)
+    Template::render("all-projects", context)
 }
 
 #[catch(404)]
@@ -317,10 +317,10 @@ fn server_error() -> Template {
     Template::render("catchers/500", context! {})
 }
 
-#[shuttle_runtime::main]
 // #[launch]
-fn rocket() -> shuttle_rocket::ShuttleRocket {
-    rocket::build()
+#[shuttle_runtime::main]
+async fn rocket() -> shuttle_rocket::ShuttleRocket {
+    let rocket = rocket::build()
         .mount(
             "/",
             routes![
@@ -348,8 +348,8 @@ fn rocket() -> shuttle_rocket::ShuttleRocket {
         )
         .mount("/", FileServer::from(relative!("static")))
         .register("/", catchers![not_found, server_error])
-        .attach(Template::fairing())
-        .into()
+        .attach(Template::fairing());
+    Ok(rocket.into())
 }
 
 // #[shuttle_runtime::main]
