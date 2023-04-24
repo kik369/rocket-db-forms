@@ -1947,6 +1947,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "protoc"
+version = "2.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0218039c514f9e14a5060742ecd50427f8ac4f85a6dc58f2ddb806e318c55ee"
+dependencies = [
+ "log",
+ "which",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2130,6 +2140,7 @@ version = "0.1.0"
 dependencies = [
  "bcrypt",
  "chrono",
+ "protoc",
  "rocket",
  "rocket_dyn_templates",
  "rusqlite",
