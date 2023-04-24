@@ -9,6 +9,9 @@ jobs:
         steps:
             - checkout
             - run:
+                  name: Install protobuf-compiler
+                  command: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+            - run:
                   name: 'Install Rust nightly'
                   command: 'rustup default nightly'
             - run:
