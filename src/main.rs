@@ -317,8 +317,9 @@ fn server_error() -> Template {
     Template::render("catchers/500", context! {})
 }
 
-#[launch]
-fn rocket() -> _ {
+#[shuttle_runtime::main]
+// #[launch]
+fn rocket() -> shuttle_rocket::ShuttleRocket {
     rocket::build()
         .mount(
             "/",
@@ -348,4 +349,12 @@ fn rocket() -> _ {
         .mount("/", FileServer::from(relative!("static")))
         .register("/", catchers![not_found, server_error])
         .attach(Template::fairing())
+        .into()
 }
+
+// #[shuttle_runtime::main]
+// async fn rocket() -> shuttle_rocket::ShuttleRocket {
+//     let rocket = rocket::build().mount("/hello", routes![index]);
+
+//     Ok(rocket.into())
+// }
