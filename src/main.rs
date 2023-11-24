@@ -228,11 +228,11 @@ fn add_project_post<'r>(
     }
 }
 
-#[get("/edit/project/<id>")]
-fn edit_project_get(user: Option<User>, id: u8) -> Result<Redirect, Template> {
+#[get("/edit/project/<project_id>")]
+fn edit_project_get(user: Option<User>, project_id: u8) -> Result<Redirect, Template> {
     match user {
         Some(user) => {
-            let project = query_project_by_id(id).unwrap();
+            let project = query_project_by_id(project_id).unwrap();
             let context = context! {user, project};
             Err(Template::render("project-edit", context))
         }
@@ -240,10 +240,27 @@ fn edit_project_get(user: Option<User>, id: u8) -> Result<Redirect, Template> {
     }
 }
 
-#[get("/delete/project/<id>")]
-fn delete_project(user: Option<User>, id: u8) -> Result<Flash<Redirect>, Template> {
+#[post("/edit/project/<project_id>", data = "<form>")]
+fn edit_project_post<'r>(
+    form: Form<Contextual<'r, EditProjectForm<'r>>>,
+    user: Option<User>,
+    project_id: u8,
+) -> Redirect {
     match user {
-        Some(user) => match delete_project_by_id(id, user.id) {
+        Some(user) => {
+            let form_data = form.value.as_ref().unwrap();
+            let project_id = edit_project(project_id, form_data.name, form_data.end_date, user);
+            Redirect::to(uri!(project_id(project_id)))
+        }
+        None => Redirect::to(uri!("/login")),
+    }
+}
+
+#[get("/delete/project/<project_id>")]
+fn delete_project(user: Option<User>, project_id: u8) -> Result<Flash<Redirect>, Template> {
+    match user {
+        // user is logged in
+        Some(user) => match delete_project_by_id(project_id, &user) {
             Ok(_) => Ok(Flash::success(
                 Redirect::to(uri!(profile())),
                 "Project deleted",
@@ -253,26 +270,11 @@ fn delete_project(user: Option<User>, id: u8) -> Result<Flash<Redirect>, Templat
                 context! { msg: format!("You can't delete this project, because you're not the owner of this project."), user },
             )),
         },
+        // user is not logged in
         None => Err(Template::render(
             "login",
             context! {msg: "You need to be logged in to delete a project."},
         )),
-    }
-}
-
-#[post("/edit/project/<id>", data = "<form>")]
-fn edit_project_post<'r>(
-    form: Form<Contextual<'r, EditProjectForm<'r>>>,
-    user: Option<User>,
-    id: u8,
-) -> Redirect {
-    match user {
-        Some(user) => {
-            let form_data = form.value.as_ref().unwrap();
-            let id = edit_project(id, form_data.name, form_data.end_date, user.id);
-            Redirect::to(uri!(project_id(id)))
-        }
-        None => Redirect::to(uri!("/login")),
     }
 }
 

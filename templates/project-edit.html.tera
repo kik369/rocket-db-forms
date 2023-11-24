@@ -1,7 +1,9 @@
 {% extends "base" %} {% block content %}
 <h1>Edit a Project</h1>
 <form action="/edit/project/{{ project.id_proj }}" method="post">
+    <label for="name">Project Name</label>
     <input type="text" name="name" id="name" value="{{ project.name }}" /><br />
+    <label for="end_date">End Date</label>
     <input
         type="datetime-local"
         name="end_date"
@@ -12,3 +14,4 @@
     <input type="submit" value="Edit Project" />
 </form>
 {% endblock %}
+
