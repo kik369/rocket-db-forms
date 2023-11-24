@@ -1,19 +1,42 @@
-# Rust, Rocket, SQLite, and Forms
+# rocket-db-forms
 
-This project is an exploration of Rust, [Rocket](https://rocket.rs/), SQLite, and forms to learn more about their integration and usage. This learning exercise covers various aspects, such as displaying user information, listing projects, and more.
+## Description
 
-The following routes have been implemented:
+This project, 'rocket-db-forms', is a Rust-based application designed to streamline the integration of web forms with databases using the Rocket framework. It aims to provide a robust and efficient solution for handling form data in web applications.
 
-[All Users](http://127.0.0.1:8000/all-users) - Displays a list of all users in the database.
+## Getting Started
 
-[All Projects](http://127.0.0.1:8000/all-projects) - Shows a list of all projects in the database.
+To get started with 'rocket-db-forms', clone the repository to your local machine using:
 
-[All Projects for User `<id>`](http://127.0.0.1:8000/all-projects-for-user/4) - Lists all projects associated with a specific user, identified by their user ID.
+```bash
+git clone https://github.com/kik369/rocket-db-forms.git
+```
 
-[User Info and All Projects for That User](http://127.0.0.1:8000/user/1) - Displays detailed information for a specific user, along with a list of all their associated projects.
+## Prerequisites
 
-[Add User](http://127.0.0.1:8000/add-user) - A form to add a new User to the database.
+Before you begin, ensure you have the following installed:
 
-[Add Project](http://127.0.0.1:8000/add-project) - A form to add a new Project for a User to the database.
+-   Rust Programming Language
+-   Cargo (Rust's package manager)
+-   Any other project-specific dependencies
 
-While the implementation might not be perfect, the primary goal of this project is to learn and experiment with the various technologies involved.
+## Installation
+
+Follow these steps to set up the project:
+
+1. Navigate to the project directory:
+    ```bash
+    cd rocket-db-forms
+    ```
+2. Build the project using Cargo:
+    ```bash
+    cargo build
+    ```
+
+## Usage
+
+Here's how you can use 'rocket-db-forms' (include specific commands or code snippets).
+
+## License
+
+This project is licensed under the [INSERT LICENSE HERE] License - see the `LICENSE.md` file for details.
