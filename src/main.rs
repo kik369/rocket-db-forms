@@ -243,13 +243,16 @@ fn edit_project_get(user: Option<User>, id: u8) -> Result<Redirect, Template> {
 #[get("/delete/project/<id>")]
 fn delete_project(user: Option<User>, id: u8) -> Result<Flash<Redirect>, Template> {
     match user {
-        Some(_user) => {
-            delete_project_by_id(id);
-            Ok(Flash::success(
+        Some(user) => match delete_project_by_id(id, user.id) {
+            Ok(_) => Ok(Flash::success(
                 Redirect::to(uri!(profile())),
-                "project deleted",
-            ))
-        }
+                "Project deleted",
+            )),
+            Err(_e) => Err(Template::render(
+                "profile",
+                context! { msg: format!("You can't delete this project, because you're not the owner of this project."), user },
+            )),
+        },
         None => Err(Template::render(
             "login",
             context! {msg: "You need to be logged in to delete a project."},

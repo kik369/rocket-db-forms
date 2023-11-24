@@ -277,11 +277,30 @@ pub fn edit_project(id: u8, name: &str, end_date: &str, user_id: u8) -> u8 {
     connection.last_insert_rowid() as u8
 }
 
-pub fn delete_project_by_id(id: u8) {
-    let connection = Connection::open("db.sqlite").unwrap();
-    connection
-        .execute("DELETE FROM project WHERE id_proj = ?1", params![id])
-        .unwrap();
+pub fn delete_project_by_id(id: u8, user_id: u8) -> Result<(), Error> {
+    let connection = Connection::open("db.sqlite")?;
+
+    // Retrieve the owner's user ID for the project
+    let mut stmt = connection.prepare("SELECT owner_user_id FROM project WHERE id_proj = ?1")?;
+    let mut rows = stmt.query(params![id])?;
+
+    if let Some(row) = rows.next()? {
+        let owner_id: u8 = row.get(0)?;
+
+        // Check if the user_id matches the owner's user ID
+        if owner_id == user_id {
+            // Proceed with deletion if the user is the owner
+            connection.execute("DELETE FROM project WHERE id_proj = ?1", params![id])?;
+            Ok(())
+        } else {
+            // Handle the case where the user is not the owner
+            // You can return a generic error or define your own error type
+            Err(Error::QueryReturnedNoRows) // Using a generic error for demonstration
+        }
+    } else {
+        // Handle the case where the project is not found
+        Err(Error::QueryReturnedNoRows) // Using a generic error for demonstration
+    }
 }
 
 // parses from "2020-01-01T00:00:00" to "2020-01-01 00:00:00"

@@ -14,8 +14,17 @@
         required
     />
     <label for="password">password</label>
-    <input type="password" name="password" placeholder="password" id="password" /><br />
-    <div hx-get="svg-loaders/rings.svg" hx-target="previous h2" hx-swap="outerHTML">
+    <input
+        type="password"
+        name="password"
+        placeholder="password"
+        id="password"
+    /><br />
+    <div
+        hx-get="svg-loaders/rings.svg"
+        hx-target="previous h2"
+        hx-swap="outerHTML"
+    >
         <input type="submit" value="log in" />
     </div>
 </form>
