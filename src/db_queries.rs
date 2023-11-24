@@ -67,8 +67,8 @@ pub fn query_all_users() -> Vec<User> {
 }
 
 pub fn query_all_projects() -> Vec<Project> {
-    let connection = Connection::open("db.sqlite").unwrap();
-    let mut statement = connection.prepare("SELECT * FROM project").unwrap();
+    let conn = Connection::open("db.sqlite").unwrap();
+    let mut statement = conn.prepare("SELECT * FROM project").unwrap();
     let items_iter = statement
         .query_map([], |row| {
             let id_proj: Option<u8> = row.get(0)?;
@@ -167,8 +167,8 @@ pub fn query_user_by_email(email: String) -> Result<User, Error> {
 
 pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
     let id = id.to_string();
-    let connection = Connection::open("db.sqlite").unwrap();
-    let mut statement = connection
+    let conn = Connection::open("db.sqlite").unwrap();
+    let mut statement = conn
         .prepare(
             format!(
                 "SELECT * FROM project
@@ -202,8 +202,8 @@ pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
 
 pub fn query_project_by_id(id: u8) -> Result<Project, Error> {
     let id = id.to_string();
-    let connection = Connection::open("db.sqlite").unwrap();
-    let mut statement = connection
+    let conn = Connection::open("db.sqlite").unwrap();
+    let mut statement = conn
         .prepare(format!("SELECT * FROM project WHERE id_proj = {}", id).as_str())
         .unwrap();
     let mut items_iter = statement.query_map([], |row| {
@@ -230,8 +230,8 @@ pub fn query_project_by_id(id: u8) -> Result<Project, Error> {
 
 pub fn add_user(email: &str, password: &str) {
     let password = passwords::hash_password(password);
-    let connection = Connection::open("db.sqlite").unwrap();
-    match connection.execute(
+    let conn = Connection::open("db.sqlite").unwrap();
+    match conn.execute(
         "INSERT INTO user (email, password) VALUES (?1, ?2)",
         params![email, password],
     ) {
@@ -240,65 +240,52 @@ pub fn add_user(email: &str, password: &str) {
     }
 }
 
-// pub fn add_project(name: &str, user_id: u8) {
-//     let connection = Connection::open("db.sqlite").unwrap();
-//     match connection.execute(
-//         "INSERT INTO project (name, end_date, user_id) VALUES (?1, ?2, ?3)",
-//         params![name, "", user_id],
-//     ) {
-//         Ok(updated) => println!("{} rows were updated", updated),
-//         Err(err) => println!("update failed: {}", err),
-//     }
-// }
-
 // add project and return the id of the added project for redirect
 pub fn add_project(name: &str, user_id: u8) -> u8 {
-    let connection = Connection::open("db.sqlite").unwrap();
-    connection
-        .execute(
-            "INSERT INTO project (name, end_date, user_id) VALUES (?1, ?2, ?3)",
-            params![name, "", user_id],
-        )
-        .unwrap();
+    let conn = Connection::open("db.sqlite").unwrap();
+    conn.execute(
+        "INSERT INTO project (name, end_date, user_id) VALUES (?1, ?2, ?3)",
+        params![name, "", user_id],
+    )
+    .unwrap();
 
-    connection.last_insert_rowid() as u8
+    conn.last_insert_rowid() as u8
 }
 
 // edit project and return the id of the edited project for redirect
 pub fn edit_project(id: u8, name: &str, end_date: &str, user_id: u8) -> u8 {
     let end_date = parse_date(end_date);
-    let connection = Connection::open("db.sqlite").unwrap();
-    connection
-        .execute(
-            "REPLACE INTO project (id_proj, name, end_date, user_id) VALUES (?1, ?2, ?3, ?4)",
-            params![id, name, end_date, user_id],
-        )
-        .unwrap();
-    connection.last_insert_rowid() as u8
+    let conn = Connection::open("db.sqlite").unwrap();
+    conn.execute(
+        "REPLACE INTO project (id_proj, name, end_date, user_id) VALUES (?1, ?2, ?3, ?4)",
+        params![id, name, end_date, user_id],
+    )
+    .unwrap();
+    conn.last_insert_rowid() as u8
 }
 
-pub fn delete_project_by_id(id: u8, user_id: u8) -> Result<(), Error> {
-    let connection = Connection::open("db.sqlite")?;
-
-    // Retrieve the owner's user ID for the project
-    let mut stmt = connection.prepare("SELECT owner_user_id FROM project WHERE id_proj = ?1")?;
-    let mut rows = stmt.query(params![id])?;
+fn user_owns_project_by_id(conn: &Connection, user_id: u8, project_id: u8) -> Result<bool, Error> {
+    let mut statement = conn.prepare("SELECT user_id FROM project WHERE id_proj = ?1")?;
+    let mut rows = statement.query(params![project_id])?;
 
     if let Some(row) = rows.next()? {
         let owner_id: u8 = row.get(0)?;
-
-        // Check if the user_id matches the owner's user ID
         if owner_id == user_id {
-            // Proceed with deletion if the user is the owner
-            connection.execute("DELETE FROM project WHERE id_proj = ?1", params![id])?;
-            Ok(())
-        } else {
-            // Handle the case where the user is not the owner
-            // You can return a generic error or define your own error type
-            Err(Error::QueryReturnedNoRows) // Using a generic error for demonstration
+            return Ok(true);
         }
+    }
+    Ok(false)
+}
+
+pub fn delete_project_by_id(project_id: u8, user_id: u8) -> Result<(), Error> {
+    let conn = Connection::open("db.sqlite")?;
+    if user_owns_project_by_id(&conn, user_id, project_id).unwrap() {
+        conn.execute(
+            "DELETE FROM project WHERE id_proj = ?1",
+            params![project_id],
+        )?;
+        Ok(())
     } else {
-        // Handle the case where the project is not found
         Err(Error::QueryReturnedNoRows) // Using a generic error for demonstration
     }
 }
