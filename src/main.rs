@@ -5,9 +5,9 @@ mod db_queries;
 mod passwords;
 
 use db_queries::{
-    add_project, add_user, edit_project, query_admin_by_id, query_all_projects,
-    query_all_projects_for_user, query_all_users, query_project_by_id, query_user_by_email,
-    query_user_by_id, Admin, User,
+    add_project, add_user, delete_project_by_id, edit_project, query_admin_by_id,
+    query_all_projects, query_all_projects_for_user, query_all_users, query_project_by_id,
+    query_user_by_email, query_user_by_id, Admin, User,
 };
 use passwords::verify_password;
 use rocket::http::{Cookie, CookieJar};
@@ -31,11 +31,11 @@ impl<'r> FromRequest<'r> for User {
                     Ok(user) => {
                         return Outcome::Success(user);
                     }
-                    Err(_) => return Outcome::Forward(()),
+                    Err(_) => return Outcome::Forward(Status::Unauthorized),
                 }
             }
         }
-        Outcome::Forward(())
+        Outcome::Forward(Status::Unauthorized)
     }
 }
 
@@ -51,14 +51,14 @@ impl<'r> FromRequest<'r> for Admin {
                         if admin.user.admin {
                             return Outcome::Success(admin);
                         } else {
-                            return Outcome::Forward(());
+                            return Outcome::Forward(Status::Unauthorized);
                         }
                     }
-                    Err(_) => return Outcome::Forward(()),
+                    Err(_) => return Outcome::Forward(Status::Unauthorized),
                 }
             }
         }
-        Outcome::Forward(())
+        Outcome::Forward(Status::Unauthorized)
     }
 }
 
@@ -161,7 +161,7 @@ fn login_post<'r>(cookies: &CookieJar<'_>, form: Form<Contextual<'r, LoginForm<'
 
 #[get("/logout")]
 fn logout(cookies: &CookieJar<'_>) -> Redirect {
-    cookies.remove_private(Cookie::named("user_id_in_cookie"));
+    cookies.remove_private("user_id_in_cookie");
     Redirect::to(uri!(login_get_no_auth()))
 }
 
@@ -237,6 +237,23 @@ fn edit_project_get(user: Option<User>, id: u8) -> Result<Redirect, Template> {
             Err(Template::render("project-edit", context))
         }
         None => Ok(Redirect::to(uri!("/login"))),
+    }
+}
+
+#[get("/delete/project/<id>")]
+fn delete_project(user: Option<User>, id: u8) -> Result<Flash<Redirect>, Template> {
+    match user {
+        Some(_user) => {
+            delete_project_by_id(id);
+            Ok(Flash::success(
+                Redirect::to(uri!(profile())),
+                "project deleted",
+            ))
+        }
+        None => Err(Template::render(
+            "login",
+            context! {msg: "You need to be logged in to delete a project."},
+        )),
     }
 }
 
@@ -341,6 +358,7 @@ fn rocket() -> _ {
                 project_id,
                 edit_project_get,
                 edit_project_post,
+                delete_project,
                 all_users,
                 all_projects,
             ],

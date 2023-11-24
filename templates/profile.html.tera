@@ -6,7 +6,8 @@
 {% if projects %} {% for entry in projects %}
 <p>
     <strong
-        >{{ entry.id_proj }} <a href="/project/{{ entry.id_proj }}">{{ entry.name }}</a></strong
+        >{{ entry.id_proj }}
+        <a href="/project/{{ entry.id_proj }}">{{ entry.name }}</a></strong
     >
     <br />
     Start Date: {{ entry.start_date }}<br />
@@ -14,3 +15,4 @@
     Project belongt to user_id: {{ entry.user_id }} ({{ user.email }})
 </p>
 {% endfor %}{%endif%}{% endblock %}
+
