@@ -3,6 +3,7 @@ extern crate rocket;
 
 mod db_queries;
 mod passwords;
+mod serialise;
 
 use db_queries::{
     add_project, add_user, delete_project_by_id, edit_project, query_admin_by_id,
@@ -104,8 +105,17 @@ fn index_no_auth() -> Template {
 #[get("/profile")]
 fn profile(user: User, flash: Option<FlashMessage<'_>>) -> Template {
     let msg = get_flash_msg(flash);
-    let projects = query_all_projects_for_user(user.id);
-    Template::render("profile", context! {projects, user, msg})
+    match query_all_projects_for_user(user.id) {
+        Ok(projects) => Template::render("profile", context! {projects, user, msg}),
+        Err(_) =>
+        // Handle the error case
+        {
+            Template::render(
+                "error",
+                context! {message: "Failed to query projects or users."},
+            )
+        }
+    }
 }
 
 #[get("/profile", rank = 2)]
@@ -165,18 +175,40 @@ fn logout(cookies: &CookieJar<'_>) -> Redirect {
     Redirect::to(uri!(login_get_no_auth()))
 }
 
-#[get("/user/<id>")]
-fn user_id(id: u8) -> Template {
-    let serialized_data_user = query_user_by_id(id).unwrap();
-    let serialized_data_project = query_all_projects_for_user(id);
-    let context = context! {serialized_data_user, serialized_data_project};
-    Template::render("user-id", context)
+#[get("/user/<user_id>")]
+fn user_id(user_id: u8) -> Template {
+    match (
+        query_user_by_id(user_id),
+        query_all_projects_for_user(user_id),
+    ) {
+        (Ok(user), Ok(projects)) => {
+            let context = context! {user, projects};
+            Template::render("user-id", context)
+        }
+        _ => {
+            // Handle the error case
+            Template::render(
+                "error",
+                context! {message: "Failed to query projects or users."},
+            )
+        }
+    }
 }
 
 #[get("/all-projects-for-user/<id>")]
 fn all_projects_for_user(id: u8) -> Template {
-    let serialized_data = query_all_projects_for_user(id);
-    Template::render("all-projects-for-user", context! {serialized_data})
+    match query_all_projects_for_user(id) {
+        Ok(projects) => {
+            let serialised_data = projects;
+            Template::render("all-projects-for-user", context! {serialised_data})
+        }
+        Err(_) => {
+            // Handle the error case, possibly by rendering an error page
+            Template::render("error", context! {message: "Failed to query projects."})
+        }
+    }
+
+    // let serialized_data = query_all_projects_for_user(id);
 }
 
 #[get("/project/<id>")]
@@ -291,8 +323,13 @@ fn add_user_post<'r>(form: Form<Contextual<'r, UserRegistrationForm<'r>>>) -> (S
     let template = match form.value {
         Some(ref submission) => {
             if submission.password == submission.password1 {
-                add_user(submission.email, submission.password);
-                Template::render("add-user", &form.context)
+                match add_user(submission.email, submission.password) {
+                    Ok(_) => Template::render("success", context! {}),
+                    Err(e) => Template::render(
+                        "add-user",
+                        context! {msg: format!("Failed to add user. Error: {}", e)},
+                    ),
+                }
             } else {
                 Template::render("add-user", context! {})
             }
@@ -305,28 +342,46 @@ fn add_user_post<'r>(form: Form<Contextual<'r, UserRegistrationForm<'r>>>) -> (S
 
 #[get("/all-users")]
 fn all_users(user: User, admin: Admin) -> Template {
-    let all_users = query_all_users();
-    let user_count = all_users.len();
-    let admin_count = all_users.iter().filter(|user| user.admin).count();
-    let context = context! {all_users, user, admin, user_count, admin_count};
-    Template::render("all-users", context)
+    match query_all_users() {
+        Ok(all_users) => {
+            let user_count = all_users.len();
+            let admin_count = all_users.iter().filter(|user| user.admin).count();
+            let context = context! {all_users, user, admin, user_count, admin_count};
+            Template::render("all-users", context)
+        }
+        Err(_) => {
+            // Handle the error case, possibly by rendering an error page
+            Template::render("error", context! {message: "Failed to query users."})
+        }
+    }
 }
 
 #[get("/all-projects")]
 fn all_projects(user: User, admin: Admin) -> Template {
-    let all_projects = query_all_projects();
-    let all_users = query_all_users();
+    match (query_all_projects(), query_all_users()) {
+        (Ok(all_projects), Ok(all_users)) => {
+            let no_end_date = all_projects
+                .iter()
+                .filter(|project| project.end_date.is_empty())
+                .count();
+            let project_count = all_projects.len();
+            let percentage = if project_count > 0 {
+                (no_end_date as f64 / project_count as f64) * 100.0
+            } else {
+                0.0
+            };
 
-    let no_end_date = all_projects
-        .iter()
-        .filter(|project| project.end_date.is_empty())
-        .count();
-    let project_count = all_projects.len();
-    let percentage = (no_end_date as f64 / project_count as f64) * 100.0;
-
-    let context =
-        context! {all_projects, all_users, user, admin, no_end_date, project_count, percentage};
-    Template::render("all-projects", context)
+            let context = context! {all_projects, all_users, user, admin, no_end_date, project_count, percentage};
+            Template::render("all-projects", context)
+        }
+        _ => {
+            // Handle the error case
+            Template::render(
+                "error",
+                context! {message: "Failed to query projects or users."},
+            )
+        }
+    }
 }
 
 #[catch(404)]

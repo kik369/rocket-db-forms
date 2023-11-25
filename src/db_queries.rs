@@ -1,5 +1,5 @@
-use crate::passwords;
-use chrono::NaiveDateTime;
+use crate::passwords::hash_password;
+use crate::serialise::{parse_date, serialise_data};
 use rusqlite::{params, Connection, Error};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -25,69 +25,48 @@ pub struct Project {
     pub user_id: u8,
 }
 
-fn serialize_data<T, E, I>(items: I, mut vector: Vec<T>) -> Vec<T>
-where
-    I: Iterator<Item = Result<T, E>>,
-    E: Debug,
-{
-    for item in items {
-        match item {
-            Ok(item) => vector.push(item),
-            Err(e) => println!(
-                "Encountered error while serializing database items: {:?}",
-                e
-            ),
-        }
-    }
-    vector
-}
+pub fn query_all_users() -> Result<Vec<User>, Error> {
+    let conn = Connection::open("db.sqlite")?;
 
-pub fn query_all_users() -> Vec<User> {
-    let conn = Connection::open("db.sqlite").unwrap();
+    let mut stmt = conn.prepare("SELECT * FROM user")?;
 
-    let mut stmt = conn.prepare("SELECT * FROM user").unwrap();
-
-    let items_iter = stmt
-        .query_map([], |row| {
-            let id: u8 = row.get(0)?;
-            let email: String = row.get::<_, String>(1)?;
-            let password: String = row.get::<_, String>(2)?;
-            let admin: bool = row.get(4)?;
-            Ok(User {
-                id,
-                email,
-                password,
-                admin,
-            })
+    let items_iter = stmt.query_map([], |row| {
+        let id: u8 = row.get(0)?;
+        let email: String = row.get::<_, String>(1)?;
+        let password: String = row.get::<_, String>(2)?;
+        let admin: bool = row.get(4)?;
+        Ok(User {
+            id,
+            email,
+            password,
+            admin,
         })
-        .unwrap();
+    })?;
 
     let serialized_data: Vec<User> = Vec::new();
-    serialize_data(items_iter, serialized_data)
+    Ok(serialise_data(items_iter, serialized_data))
 }
 
-pub fn query_all_projects() -> Vec<Project> {
-    let conn = Connection::open("db.sqlite").unwrap();
-    let mut statement = conn.prepare("SELECT * FROM project").unwrap();
-    let items_iter = statement
-        .query_map([], |row| {
-            let id_proj: Option<u8> = row.get(0)?;
-            let name: String = row.get::<_, String>(1)?;
-            let start_date: String = row.get::<_, String>(2)?;
-            let end_date: String = row.get::<_, String>(3)?;
-            let user_id: u8 = row.get(4)?;
-            Ok(Project {
-                id_proj,
-                name,
-                start_date,
-                end_date,
-                user_id,
-            })
+pub fn query_all_projects() -> Result<Vec<Project>, Error> {
+    let conn = Connection::open("db.sqlite")?;
+    let mut statement = conn.prepare("SELECT * FROM project")?;
+    let items_iter = statement.query_map([], |row| {
+        let id_proj: Option<u8> = row.get(0)?;
+        let name: String = row.get::<_, String>(1)?;
+        let start_date: String = row.get::<_, String>(2)?;
+        let end_date: String = row.get::<_, String>(3)?;
+        let user_id: u8 = row.get(4)?;
+        Ok(Project {
+            id_proj,
+            name,
+            start_date,
+            end_date,
+            user_id,
         })
-        .unwrap();
+    })?;
 
     let serialized_data: Vec<Project> = Vec::new();
-    serialize_data(items_iter, serialized_data)
+    Ok(serialise_data(items_iter, serialized_data))
 }
 
 pub fn query_user_by_id(id: u8) -> Result<User, Error> {
@@ -165,39 +144,35 @@ pub fn query_user_by_email(email: String) -> Result<User, Error> {
     }
 }
 
-pub fn query_all_projects_for_user(user_id: u8) -> Vec<Project> {
+pub fn query_all_projects_for_user(user_id: u8) -> Result<Vec<Project>, Error> {
     let user_id = user_id.to_string();
-    let conn = Connection::open("db.sqlite").unwrap();
-    let mut statement = conn
-        .prepare(
-            format!(
-                "SELECT * FROM project
+    let conn = Connection::open("db.sqlite")?;
+    let mut statement = conn.prepare(
+        format!(
+            "SELECT * FROM project
                 JOIN user ON project.user_id = user.id
                 WHERE user.id = {}",
-                user_id
-            )
-            .as_str(),
+            user_id
         )
-        .unwrap();
-    let items_iter = statement
-        .query_map([], |row| {
-            let id_proj: Option<u8> = row.get(0)?;
-            let name: String = row.get::<_, String>(1)?;
-            let start_date: String = row.get::<_, String>(2)?;
-            let end_date: String = row.get::<_, String>(3)?;
-            let user_id: u8 = row.get(4)?;
-            Ok(Project {
-                id_proj,
-                name,
-                start_date,
-                end_date,
-                user_id,
-            })
+        .as_str(),
+    )?;
+    let items_iter = statement.query_map([], |row| {
+        let id_proj: Option<u8> = row.get(0)?;
+        let name: String = row.get::<_, String>(1)?;
+        let start_date: String = row.get::<_, String>(2)?;
+        let end_date: String = row.get::<_, String>(3)?;
+        let user_id: u8 = row.get(4)?;
+        Ok(Project {
+            id_proj,
+            name,
+            start_date,
+            end_date,
+            user_id,
         })
-        .unwrap();
+    })?;
 
     let serialized_data: Vec<Project> = Vec::new();
-    serialize_data(items_iter, serialized_data)
+    Ok(serialise_data(items_iter, serialized_data))
 }
 
 pub fn query_project_by_id(id: u8) -> Result<Project, Error> {
@@ -228,15 +203,15 @@ pub fn query_project_by_id(id: u8) -> Result<Project, Error> {
     }
 }
 
-pub fn add_user(email: &str, password: &str) {
-    let password = passwords::hash_password(password);
+pub fn add_user(email: &str, password: &str) -> Result<(), Error> {
+    let password = hash_password(password);
     let conn = Connection::open("db.sqlite").unwrap();
     match conn.execute(
         "INSERT INTO user (email, password) VALUES (?1, ?2)",
         params![email, password],
     ) {
-        Ok(updated) => println!("{} rows were updated", updated),
-        Err(err) => println!("Update failed: {}", err),
+        Ok(_) => Ok(()),
+        Err(err) => Err(err),
     }
 }
 
@@ -292,13 +267,4 @@ fn user_owns_project_by_id(conn: &Connection, user_id: u8, project_id: u8) -> Re
         }
     }
     Ok(false)
-}
-
-// parses from "2020-01-01T00:00:00" to "2020-01-01 00:00:00"
-// "2020-01-01T00:00:00" is the format that the datepicker returns
-// "2020-01-01 00:00:00" is the format generated by 'DATETIME DEFAULT CURRENT_TIMESTAMP' in sqlite
-fn parse_date(date: &str) -> Result<String, ()> {
-    let parsed_end_date = NaiveDateTime::parse_from_str(date, "%Y-%m-%dT%H:%M:%S")
-        .expect("Failed to parse date string");
-    Ok(parsed_end_date.format("%Y-%m-%d %H:%M:%S").to_string())
 }
