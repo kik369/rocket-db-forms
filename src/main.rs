@@ -107,14 +107,10 @@ fn profile(user: User, flash: Option<FlashMessage<'_>>) -> Template {
     let msg = get_flash_msg(flash);
     match query_all_projects_for_user(user.id) {
         Ok(projects) => Template::render("profile", context! {projects, user, msg}),
-        Err(_) =>
-        // Handle the error case
-        {
-            Template::render(
-                "error",
-                context! {message: "Failed to query projects or users."},
-            )
-        }
+        Err(_) => Template::render(
+            "error",
+            context! {msg: "Failed to query projects or users."},
+        ),
     }
 }
 
@@ -150,16 +146,27 @@ struct LoginForm<'v> {
 fn login_post<'r>(cookies: &CookieJar<'_>, form: Form<Contextual<'r, LoginForm<'r>>>) -> Template {
     match form.value {
         Some(ref submission) => {
-            // TODO: something with the to_string() and as_str() calls
-            // TODO: also check query_user_by_email()
-            let user = query_user_by_email(submission.email.to_string());
-            match user {
+            match query_user_by_email(submission.email.to_string()) {
                 Ok(user) => {
-                    if verify_password(submission.password, user.password.as_str()) {
-                        cookies.add_private(Cookie::new("user_id_in_cookie", user.id.to_string()));
-                        Template::render("success", context! { user })
-                    } else {
-                        Template::render("login", context! {})
+                    match verify_password(submission.password, &user.password) {
+                        Ok(valid) => {
+                            if valid {
+                                cookies.add_private(Cookie::new(
+                                    "user_id_in_cookie",
+                                    user.id.to_string(),
+                                ));
+                                Template::render("success", context! { user })
+                            } else {
+                                Template::render("login", context! {})
+                            }
+                        }
+                        Err(_) => {
+                            // Handle the password verification error
+                            Template::render(
+                                "error",
+                                context! {msg: "Password verification failed."},
+                            )
+                        }
                     }
                 }
                 Err(_) => Template::render("login", context! {}),
@@ -185,13 +192,10 @@ fn user_id(user_id: u8) -> Template {
             let context = context! {user, projects};
             Template::render("user-id", context)
         }
-        _ => {
-            // Handle the error case
-            Template::render(
-                "error",
-                context! {message: "Failed to query projects or users."},
-            )
-        }
+        _ => Template::render(
+            "error",
+            context! {msg: "Failed to query projects or users."},
+        ),
     }
 }
 
@@ -202,13 +206,8 @@ fn all_projects_for_user(id: u8) -> Template {
             let serialised_data = projects;
             Template::render("all-projects-for-user", context! {serialised_data})
         }
-        Err(_) => {
-            // Handle the error case, possibly by rendering an error page
-            Template::render("error", context! {message: "Failed to query projects."})
-        }
+        Err(_) => Template::render("error", context! {msg: "Failed to query projects."}),
     }
-
-    // let serialized_data = query_all_projects_for_user(id);
 }
 
 #[get("/project/<id>")]
@@ -249,14 +248,19 @@ fn add_project_get(user: Option<User>) -> Result<Redirect, Template> {
 fn add_project_post<'r>(
     form: Form<Contextual<'r, AddProjectForm<'r>>>,
     user: Option<User>,
-) -> Redirect {
+) -> Result<Redirect, Template> {
     match user {
         Some(user) => {
             let form_data = form.value.as_ref().unwrap();
-            let id = add_project(form_data.name, user.id);
-            Redirect::to(uri!(project_id(id)))
+            match add_project(form_data.name, user.id) {
+                Ok(id) => Ok(Redirect::to(uri!(project_id(id)))),
+                Err(_) => Err(Template::render(
+                    "error",
+                    context! {msg: "Failed to add project."},
+                )),
+            }
         }
-        None => Redirect::to(uri!("/login")),
+        None => Ok(Redirect::to(uri!("/login"))),
     }
 }
 
@@ -277,14 +281,19 @@ fn edit_project_post<'r>(
     form: Form<Contextual<'r, EditProjectForm<'r>>>,
     user: Option<User>,
     project_id: u8,
-) -> Redirect {
+) -> Result<Redirect, Template> {
     match user {
         Some(user) => {
             let form_data = form.value.as_ref().unwrap();
-            let project_id = edit_project(project_id, form_data.name, form_data.end_date, user);
-            Redirect::to(uri!(project_id(project_id)))
+            match edit_project(project_id, form_data.name, form_data.end_date, user) {
+                Ok(updated_project_id) => Ok(Redirect::to(uri!(project_id(updated_project_id)))),
+                Err(_) => Err(Template::render(
+                    "error",
+                    context! {msg: "Failed to edit project."},
+                )),
+            }
         }
-        None => Redirect::to(uri!("/login")),
+        None => Ok(Redirect::to(uri!("/login"))),
     }
 }
 
@@ -349,10 +358,7 @@ fn all_users(user: User, admin: Admin) -> Template {
             let context = context! {all_users, user, admin, user_count, admin_count};
             Template::render("all-users", context)
         }
-        Err(_) => {
-            // Handle the error case, possibly by rendering an error page
-            Template::render("error", context! {message: "Failed to query users."})
-        }
+        Err(_) => Template::render("error", context! {msg: "Failed to query users."}),
     }
 }
 
@@ -374,13 +380,10 @@ fn all_projects(user: User, admin: Admin) -> Template {
             let context = context! {all_projects, all_users, user, admin, no_end_date, project_count, percentage};
             Template::render("all-projects", context)
         }
-        _ => {
-            // Handle the error case
-            Template::render(
-                "error",
-                context! {message: "Failed to query projects or users."},
-            )
-        }
+        _ => Template::render(
+            "error",
+            context! {msg: "Failed to query projects or users."},
+        ),
     }
 }
 

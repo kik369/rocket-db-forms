@@ -1,21 +1,14 @@
 use chrono::NaiveDateTime;
 use std::fmt::Debug;
 
-pub fn serialise_data<T, E, I>(items: I, mut vector: Vec<T>) -> Vec<T>
+pub fn serialise_data<T, E, I>(items: I) -> Vec<T>
 where
     I: Iterator<Item = Result<T, E>>,
     E: Debug,
 {
-    for item in items {
-        match item {
-            Ok(item) => vector.push(item),
-            Err(e) => println!(
-                "Encountered error while serializing database items: {:?}",
-                e
-            ),
-        }
-    }
-    vector
+    items
+        .filter_map(|item| item.map_err(|_e| {}).ok())
+        .collect()
 }
 
 // parses from "2020-01-01T00:00:00" to "2020-01-01 00:00:00"

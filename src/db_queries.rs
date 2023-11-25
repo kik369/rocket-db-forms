@@ -43,8 +43,7 @@ pub fn query_all_users() -> Result<Vec<User>, Error> {
         })
     })?;
 
-    let serialized_data: Vec<User> = Vec::new();
-    Ok(serialise_data(items_iter, serialized_data))
+    Ok(serialise_data(items_iter))
 }
 
 pub fn query_all_projects() -> Result<Vec<Project>, Error> {
@@ -65,8 +64,7 @@ pub fn query_all_projects() -> Result<Vec<Project>, Error> {
         })
     })?;
 
-    let serialized_data: Vec<Project> = Vec::new();
-    Ok(serialise_data(items_iter, serialized_data))
+    Ok(serialise_data(items_iter))
 }
 
 pub fn query_user_by_id(id: u8) -> Result<User, Error> {
@@ -171,8 +169,7 @@ pub fn query_all_projects_for_user(user_id: u8) -> Result<Vec<Project>, Error> {
         })
     })?;
 
-    let serialized_data: Vec<Project> = Vec::new();
-    Ok(serialise_data(items_iter, serialized_data))
+    Ok(serialise_data(items_iter))
 }
 
 pub fn query_project_by_id(id: u8) -> Result<Project, Error> {
@@ -204,43 +201,50 @@ pub fn query_project_by_id(id: u8) -> Result<Project, Error> {
 }
 
 pub fn add_user(email: &str, password: &str) -> Result<(), Error> {
-    let password = hash_password(password);
-    let conn = Connection::open("db.sqlite").unwrap();
-    match conn.execute(
-        "INSERT INTO user (email, password) VALUES (?1, ?2)",
-        params![email, password],
-    ) {
-        Ok(_) => Ok(()),
-        Err(err) => Err(err),
+    match hash_password(password) {
+        Ok(password) => {
+            let conn = Connection::open("db.sqlite")?;
+            match conn.execute(
+                "INSERT INTO user (email, password) VALUES (?1, ?2)",
+                params![email, password],
+            ) {
+                Ok(_) => Ok(()),
+                Err(err) => Err(err),
+            }
+        }
+        Err(_err) => Err(rusqlite::Error::ExecuteReturnedResults),
     }
 }
 
-// add project and return the id of the added project for redirect
-pub fn add_project(name: &str, user_id: u8) -> u8 {
-    let conn = Connection::open("db.sqlite").unwrap();
+pub fn add_project(name: &str, user_id: u8) -> Result<u8, Error> {
+    let conn = Connection::open("db.sqlite")?;
     conn.execute(
         "INSERT INTO project (name, end_date, user_id) VALUES (?1, ?2, ?3)",
         params![name, "", user_id],
-    )
-    .unwrap();
+    )?;
 
-    conn.last_insert_rowid() as u8
+    Ok(conn.last_insert_rowid() as u8)
 }
 
-// edit project and return the id of the edited project for redirect
-pub fn edit_project(project_id: u8, name: &str, end_date: &str, user: User) -> u8 {
-    let end_date = match !end_date.is_empty() {
-        true => parse_date(end_date).unwrap(),
-        false => "".to_string(),
+pub fn edit_project(
+    project_id: u8,
+    name: &str,
+    end_date: &str,
+    user: User,
+) -> Result<u8, rusqlite::Error> {
+    let end_date = if !end_date.is_empty() {
+        parse_date(end_date).map_err(|_| rusqlite::Error::ExecuteReturnedResults)?
+    // Convert the error type
+    } else {
+        "".to_string()
     };
 
-    let conn = Connection::open("db.sqlite").unwrap();
+    let conn = Connection::open("db.sqlite")?;
     conn.execute(
         "REPLACE INTO project (id_proj, name, end_date, user_id) VALUES (?1, ?2, ?3, ?4)",
         params![project_id, name, end_date, user.id],
-    )
-    .unwrap();
-    conn.last_insert_rowid() as u8
+    )?;
+    Ok(conn.last_insert_rowid() as u8)
 }
 
 pub fn delete_project_by_id(project_id: u8, user: &User) -> Result<(), Error> {
