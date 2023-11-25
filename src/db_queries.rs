@@ -165,8 +165,8 @@ pub fn query_user_by_email(email: String) -> Result<User, Error> {
     }
 }
 
-pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
-    let id = id.to_string();
+pub fn query_all_projects_for_user(user_id: u8) -> Vec<Project> {
+    let user_id = user_id.to_string();
     let conn = Connection::open("db.sqlite").unwrap();
     let mut statement = conn
         .prepare(
@@ -174,7 +174,7 @@ pub fn query_all_projects_for_user(id: u8) -> Vec<Project> {
                 "SELECT * FROM project
                 JOIN user ON project.user_id = user.id
                 WHERE user.id = {}",
-                id
+                user_id
             )
             .as_str(),
         )
@@ -254,7 +254,11 @@ pub fn add_project(name: &str, user_id: u8) -> u8 {
 
 // edit project and return the id of the edited project for redirect
 pub fn edit_project(project_id: u8, name: &str, end_date: &str, user: User) -> u8 {
-    let end_date = parse_date(end_date).unwrap();
+    let end_date = match !end_date.is_empty() {
+        true => parse_date(end_date).unwrap(),
+        false => "".to_string(),
+    };
+
     let conn = Connection::open("db.sqlite").unwrap();
     conn.execute(
         "REPLACE INTO project (id_proj, name, end_date, user_id) VALUES (?1, ?2, ?3, ?4)",
