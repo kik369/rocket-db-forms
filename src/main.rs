@@ -20,6 +20,7 @@ use rocket::{
     http::Status,
 };
 use rocket_dyn_templates::{context, Template};
+use serialise::get_flash_msg;
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
@@ -79,12 +80,6 @@ struct AddProjectForm<'v> {
 struct EditProjectForm<'v> {
     name: &'v str,
     end_date: &'v str,
-}
-
-fn get_flash_msg(flash: Option<FlashMessage<'_>>) -> String {
-    flash
-        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
-        .unwrap_or_default()
 }
 
 #[get("/egg")]

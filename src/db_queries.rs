@@ -68,7 +68,7 @@ pub fn query_all_projects() -> Result<Vec<Project>, Error> {
 }
 
 pub fn query_user_by_id(id: u8) -> Result<User, Error> {
-    let conn = Connection::open("db.sqlite").unwrap();
+    let conn = Connection::open("db.sqlite")?;
 
     let mut stmt = conn.prepare(format!("SELECT * FROM user WHERE id = {}", id).as_str())?;
 
@@ -92,7 +92,7 @@ pub fn query_user_by_id(id: u8) -> Result<User, Error> {
 }
 
 pub fn query_admin_by_id(id: u8) -> Result<Admin, Error> {
-    let conn = Connection::open("db.sqlite").unwrap();
+    let conn = Connection::open("db.sqlite")?;
 
     let mut stmt = conn.prepare(format!("SELECT * FROM user WHERE id = {}", id).as_str())?;
 
@@ -119,7 +119,7 @@ pub fn query_admin_by_id(id: u8) -> Result<Admin, Error> {
 }
 
 pub fn query_user_by_email(email: String) -> Result<User, Error> {
-    let conn = Connection::open("db.sqlite").unwrap();
+    let conn = Connection::open("db.sqlite")?;
 
     let mut stmt =
         conn.prepare(format!("SELECT * FROM user WHERE email = '{}'", email).as_str())?;
@@ -174,10 +174,9 @@ pub fn query_all_projects_for_user(user_id: u8) -> Result<Vec<Project>, Error> {
 
 pub fn query_project_by_id(id: u8) -> Result<Project, Error> {
     let id = id.to_string();
-    let conn = Connection::open("db.sqlite").unwrap();
-    let mut statement = conn
-        .prepare(format!("SELECT * FROM project WHERE id_proj = {}", id).as_str())
-        .unwrap();
+    let conn = Connection::open("db.sqlite")?;
+    let mut statement =
+        conn.prepare(format!("SELECT * FROM project WHERE id_proj = {}", id).as_str())?;
     let mut items_iter = statement.query_map([], |row| {
         let id_proj: Option<u8> = row.get(0)?;
         let name: String = row.get::<_, String>(1)?;
@@ -212,6 +211,7 @@ pub fn add_user(email: &str, password: &str) -> Result<(), Error> {
                 Err(err) => Err(err),
             }
         }
+        // this is a bit of a hack, but it's the only way I can think of to convert the error type
         Err(_err) => Err(rusqlite::Error::ExecuteReturnedResults),
     }
 }
@@ -249,7 +249,7 @@ pub fn edit_project(
 
 pub fn delete_project_by_id(project_id: u8, user: &User) -> Result<(), Error> {
     let conn = Connection::open("db.sqlite")?;
-    if user_owns_project_by_id(&conn, user.id, project_id).unwrap() {
+    if user_owns_project_by_id(&conn, user.id, project_id)? {
         conn.execute(
             "DELETE FROM project WHERE id_proj = ?1",
             params![project_id],

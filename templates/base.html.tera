@@ -9,8 +9,8 @@
             href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css"
         />
         <script
-            src="https://unpkg.com/htmx.org@1.9.0"
-            integrity="sha384-aOxz9UdWG0yBiyrTwPeMibmaoq07/d3a96GCbb9x60f3mOt5zwkjdbcHFnKH8qls"
+            src="https://unpkg.com/htmx.org@1.9.9"
+            integrity="sha384-QFjmbokDn2DjBjq+fM+8LUIVrAgqcNW2s0PjAxHETgRn9l4fvX31ZxDxvwQnyMOX"
             crossorigin="anonymous"
         ></script>
     </head>

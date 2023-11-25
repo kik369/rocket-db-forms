@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use rocket::request::FlashMessage;
 use std::fmt::Debug;
 
 pub fn serialise_data<T, E, I>(items: I) -> Vec<T>
@@ -18,4 +19,10 @@ pub fn parse_date(date: &str) -> Result<String, ()> {
     let parsed_end_date = NaiveDateTime::parse_from_str(date, "%Y-%m-%dT%H:%M:%S")
         .expect("Failed to parse date string");
     Ok(parsed_end_date.format("%Y-%m-%d %H:%M:%S").to_string())
+}
+
+pub fn get_flash_msg(flash: Option<FlashMessage<'_>>) -> String {
+    flash
+        .map(|flash| format!("{}: {}", flash.kind(), flash.message()))
+        .unwrap_or_default()
 }
