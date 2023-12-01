@@ -1,24 +1,25 @@
 #[macro_use]
 extern crate rocket;
 
+mod bg_func;
 mod db_queries;
 mod passwords;
 mod serialise;
 
+use bg_func::print_hello;
 use db_queries::{
     add_project, add_user, delete_project_by_id, edit_project, query_admin_by_id,
     query_all_projects, query_all_projects_for_user, query_all_users, query_project_by_id,
     query_user_by_email, query_user_by_id, Admin, User,
 };
 use passwords::verify_password;
-use rocket::http::{Cookie, CookieJar};
+use rocket::fairing::AdHoc;
+use rocket::form::{Contextual, Form};
+use rocket::fs::{relative, FileServer};
+use rocket::http::{Cookie, CookieJar, Status};
 use rocket::request::{self, FlashMessage, FromRequest, Outcome, Request};
 use rocket::response::{Flash, Redirect};
-use rocket::{
-    form::{Contextual, Form},
-    fs::{relative, FileServer},
-    http::Status,
-};
+use rocket::serde::json::Json;
 use rocket_dyn_templates::{context, Template};
 use serialise::get_flash_msg;
 
@@ -85,6 +86,11 @@ struct EditProjectForm<'v> {
 #[get("/egg")]
 fn egg() -> String {
     "🥚".to_string()
+}
+
+#[get("/json")]
+fn json_route() -> Json<&'static str> {
+    Json("{ \"message\": \"Hello, world!\" }")
 }
 
 #[get("/")]
@@ -399,6 +405,7 @@ fn rocket() -> _ {
             "/",
             routes![
                 egg,
+                json_route,
                 index,
                 index_no_auth,
                 profile,
@@ -424,4 +431,9 @@ fn rocket() -> _ {
         .register("/", catchers![not_found, server_error])
         .attach(Template::fairing())
         .mount("/", FileServer::from(relative!("static")))
+        .attach(AdHoc::on_liftoff("Liftoff Message", |_| {
+            Box::pin(async move {
+                print_hello();
+            })
+        }))
 }
